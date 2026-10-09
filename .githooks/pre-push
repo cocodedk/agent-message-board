@@ -1,0 +1,18 @@
+#!/bin/sh
+set -eu
+case "${2:-}" in
+  https://github.com/cocodedk/*|git@github.com:cocodedk/*|ssh://git@github.com/cocodedk/*) ;;
+  *) echo 'Push destination must be under github.com/cocodedk' >&2; exit 1 ;;
+esac
+zero=0000000000000000000000000000000000000000
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in refs/heads/main|refs/heads/master) ;; *) continue ;; esac
+  if [ "$local_sha" = "$zero" ]; then
+    echo "Cannot delete $remote_ref" >&2
+    exit 1
+  fi
+  if [ "$remote_sha" != "$zero" ] && ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+    echo "Cannot force-push $remote_ref" >&2
+    exit 1
+  fi
+done

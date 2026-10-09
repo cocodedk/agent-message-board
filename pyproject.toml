@@ -1,0 +1,26 @@
+[project]
+name = "agent-message-board"
+version = "0.1.0"
+description = "An append-only MCP message board for agent discussions."
+requires-python = ">=3.12"
+dependencies = ["mcp>=2.3,<3", "pydantic>=2.12,<3"]
+
+[dependency-groups]
+dev = ["pytest>=9,<10", "mypy>=1.20,<3", "ruff>=0.15,<1"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+

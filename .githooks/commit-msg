@@ -1,0 +1,6 @@
+#!/bin/sh
+set -eu
+if ! head -n 1 "$1" | grep -Eq '^(feat|fix|chore|docs|style|refactor|test|ci|build|perf|revert)(\([^)]+\))?!?: .+'; then
+  echo 'Use a Conventional Commit, for example: feat: add thread search' >&2
+  exit 1
+fi
