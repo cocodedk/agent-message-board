@@ -47,8 +47,16 @@ def build(bump: str) -> None:
     files = run("git", "ls-files", "-z").split("\0")
     files = [name for name in files if name]
     required = {
-        "models.py", "storage.py", "server.py", "help_content.py", "schema.sql",
-        "pyproject.toml", "uv.lock", ".python-version",
+        "models.py",
+        "storage.py",
+        "server.py",
+        "help_content.py",
+        "schema.sql",
+        "pyproject.toml",
+        "uv.lock",
+        ".python-version",
+        "viewer_routes.py",
+        "viewer/index.html",
     }
     assert required <= set(files), f"Missing runtime files: {required - set(files)}"
     with zipfile.ZipFile(DIST / ASSET, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -57,14 +65,18 @@ def build(bump: str) -> None:
             if name == "pyproject.toml":
                 text, count = re.subn(
                     r'(\[project\]\s*\nname = "agent-message-board"\s*\nversion = ")[^"]+',
-                    rf'\g<1>{version}', data.decode(), count=1,
+                    rf"\g<1>{version}",
+                    data.decode(),
+                    count=1,
                 )
                 assert count == 1, "Project version metadata missing"
                 data = text.encode()
             elif name == "uv.lock":
                 text, count = re.subn(
                     r'(\[\[package\]\]\s*\nname = "agent-message-board"\s*\nversion = ")[^"]+',
-                    rf'\g<1>{version}', data.decode(), count=1,
+                    rf"\g<1>{version}",
+                    data.decode(),
+                    count=1,
                 )
                 assert count == 1, "Lock version metadata missing"
                 data = text.encode()
@@ -75,9 +87,14 @@ def build(bump: str) -> None:
     with zipfile.ZipFile(DIST / ASSET) as archive:
         for name in ["pyproject.toml", "uv.lock"]:
             metadata = tomllib.loads(archive.read(f"agent-message-board/{name}").decode())
-            actual = metadata["project"]["version"] if name.endswith("toml") else next(
-                item["version"] for item in metadata["package"]
-                if item["name"] == "agent-message-board"
+            actual = (
+                metadata["project"]["version"]
+                if name.endswith("toml")
+                else next(
+                    item["version"]
+                    for item in metadata["package"]
+                    if item["name"] == "agent-message-board"
+                )
             )
             assert actual == version, f"{name}: {actual} != {version}"
         assert archive.testzip() is None
@@ -109,16 +126,28 @@ def publish() -> None:
     releases = json.loads(run("gh", "api", "--paginate", "--slurp", f"repos/{repo}/releases"))
     release = next((r for page in releases for r in page if r["tag_name"] == tag), None)
     if release is None:
-        run("gh", "release", "create", tag, "--repo", repo, "--draft", "--title", tag,
-            "--generate-notes", "--verify-tag")
+        run(
+            "gh",
+            "release",
+            "create",
+            tag,
+            "--repo",
+            repo,
+            "--draft",
+            "--title",
+            tag,
+            "--generate-notes",
+            "--verify-tag",
+        )
         release = {"draft": True, "assets": []}
     if not release["draft"]:
         assert any(a["name"] == ASSET for a in release["assets"]), "Published release incomplete"
     else:
         run("gh", "release", "upload", tag, str(DIST / ASSET), "--repo", repo, "--clobber")
     with tempfile.TemporaryDirectory() as directory:
-        run("gh", "release", "download", tag, "--repo", repo, "--pattern", ASSET,
-            "--dir", directory)
+        run(
+            "gh", "release", "download", tag, "--repo", repo, "--pattern", ASSET, "--dir", directory
+        )
         actual = hashlib.sha256((Path(directory) / ASSET).read_bytes()).hexdigest()
         assert actual == plan["sha256"], "Remote asset checksum mismatch"
     if release["draft"]:

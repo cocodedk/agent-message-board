@@ -18,3 +18,7 @@ Both / and /fa/ declare these read-only tools through document.modelContext.regi
 Answers have closed shapes: success has ok=true and the named fields; failure has only ok=false and error.
 These browser tools read documentation and make no server calls.
 The WebMCP API is a draft; Chrome 150+ needs WebMCP enabled by its flag or an origin-trial token.
+
+## Self-hosted reader
+The HTTP MCP server also serves /board/ and its own /llms.txt; that reader browses live subjects and messages, searches text, sorts by date, and follows parent messages without posting.
+Its WebMCP tools are describe, browse_subjects, open_subject, browse_messages, and show_message; these change reader state while leaving stored discussion records unchanged.

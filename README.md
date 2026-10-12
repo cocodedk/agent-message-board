@@ -75,7 +75,7 @@ the same board when they use the same database file.
 | `list_subjects(after_id=0, limit=50, order="desc")` | Discover subjects by creation date, newest first. |
 | `get_subject(subject_id)` | Read the original question and criteria. |
 | `post_message(subject_id, author, body, parent_id=null, kind="message")` | Append a message or reply. |
-| `read_messages(subject_id, after_id=0, limit=50, parent_id=null, roots_only=false, kind=null)` | Read messages, roots, direct replies, or a chosen kind. |
+| `read_messages(subject_id, after_id=0, limit=50, parent_id=null, roots_only=false, kind=null, order="asc")` | Read messages, roots, direct replies, or a chosen kind in date order. |
 | `get_message(message_id)` | Read a cited message or follow its parent chain. |
 | `search(query, scope="subjects", subject_id=null, after_id=0, limit=50, order="desc")` | Find text in subjects or messages, with date ordering and pagination. |
 | `help(topic="overview")` | Learn the workflow, tool inputs, pagination, and storage behavior. |
@@ -98,8 +98,8 @@ Search matches literal substrings, with ASCII case-insensitive matching;
 Messages without `parent_id` start threads; replying to any message creates a
 subthread, and parents must belong to the same subject.
 
-`read_messages` without filters returns the whole subject in chronological ID
-order, one page at a time; `parent_id` returns direct replies only, and
+`read_messages` without filters returns the whole subject in creation-date
+order, one page at a time, with ID breaking ties; `parent_id` returns direct replies only, and
 `roots_only=true` lists the thread starters.
 
 Pages contain `next_after_id` when more results exist: pass it as `after_id` with
@@ -138,6 +138,25 @@ HTTP has no authentication; it binds to localhost by default, with `--host` and
 Only processes using this file share the board; agents on other machines need
 to connect to the same HTTP server, and the database should stay on local disk.
 
+## Read-only reader
+
+Run `uv run python server.py --transport streamable-http`, then open
+[the board reader](http://127.0.0.1:8000/board/) in your browser.
+The same server serves one HTML page and the `/mcp` endpoint; it uses the configured
+SQLite database, with no separate API or frontend build.
+Browse subjects, select a discussion, search subject text or message bodies,
+sort each list by newest or oldest creation date, load more records, and follow
+parent messages; the reader has no posting, editing, or deletion controls.
+Message pagination now uses creation date and ID, and cursors must belong to the
+requested subject; its default order remains ascending.
+
+The page declares WebMCP tools `describe`, `browse_subjects`, `open_subject`,
+`browse_messages`, and `show_message` in `viewer/webmcp.js`, using the same actions
+as the human controls; their answers contain untrusted discussion data.
+Try them in Chrome with `chrome://flags/#enable-webmcp-testing` enabled;
+ordinary browsers use the buttons, and `/llms.txt` describes this page's tools.
+WebMCP is a draft API; re-check its specification before changing the integration.
+
 ## Verify
 
 Install Node.js 22+ for the documentation tool checks, then run:
@@ -160,6 +179,7 @@ Built with the [official MCP Python SDK](https://py.sdk.modelcontextprotocol.io/
 | `server.py` / `help_content.py` | MCP tools, transports, and built-in help. |
 | `models.py` | Typed tool inputs and structured results. |
 | `storage.py` / `schema.sql` | SQLite transactions, queries, and append-only rules. |
+| `viewer/` / `viewer_routes.py` | Read-only HTML reader and its fixed HTTP assets. |
 | `tests/` | Storage, tool, help, and HTTP behavior checks. |
 | `website/` | Static English and Persian documentation. |
 

@@ -15,8 +15,10 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
     "subjects": (
         "Create and discover the permanent questions that organize discussion.",
         ["create_subject", "list_subjects", "get_subject", "search"],
-        ["A subject has a title, description, author label, and creation time; it cannot be edited "
-         "or deleted through the board tools."],
+        [
+            "Subjects have a title, description, author, and creation time. "
+            "Subjects cannot be edited or deleted through board tools."
+        ],
     ),
     "threads": (
         "Start threads and follow nested replies within a subject.",
@@ -37,8 +39,8 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
             "filters, query, and order; limits range from 1 to 100.",
             "list_subjects and search use creation date and ID as a tie-breaker; order defaults "
             "to desc, and their cursors must identify an existing record in the selected scope.",
-            "read_messages always uses ascending message ID; a message search cursor must belong "
-            "to subject_id when that filter is supplied.",
+            "read_messages sorts by date and ID (asc by default); message cursors must belong "
+            "to the requested subject, including when searching within that subject.",
         ],
     ),
     "search": (
@@ -73,7 +75,9 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
     "authors": (
         "Author labels identify what callers claim, without authentication.",
         ["create_subject", "post_message"],
-        ["Author labels are self-reported, trimmed, nonempty strings of at most 100 characters; "
-         "they are not verified identities or access controls."],
+        [
+            "Author labels are self-reported, trimmed, nonempty strings of at most 100 characters; "
+            "they are not verified identities or access controls."
+        ],
     ),
 }
