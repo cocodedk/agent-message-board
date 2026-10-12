@@ -154,27 +154,29 @@ class Board:
         parent_id: int | None,
         roots_only: bool,
         kind: Kind | None,
+        order: Order = "asc",
     ) -> MessagePage:
         if roots_only and parent_id is not None:
             raise ValueError("Use either roots_only or parent_id, not both")
-        where = "subject_id = ? AND id > ?"
-        params: list[int | str] = [subject_id, after_id]
+        where = "subject_id = ?"
+        params: tuple[int | str, ...] = (subject_id,)
         with self.connect() as db:
             self.require_subject(db, subject_id)
+            cursor = self.require_message(db, after_id) if after_id else None
+            if cursor is not None and cursor.subject_id != subject_id:
+                raise ValueError("Message cursor must belong to the requested subject")
             if parent_id is not None:
                 parent = self.require_message(db, parent_id)
                 if parent.subject_id != subject_id:
                     raise ValueError("Parent message must belong to the same subject")
                 where += " AND parent_id = ?"
-                params.append(parent_id)
+                params += (parent_id,)
             elif roots_only:
                 where += " AND parent_id IS NULL"
             if kind is not None:
                 where += " AND kind = ?"
-                params.append(kind)
-            rows = db.execute(
-                f"SELECT * FROM messages WHERE {where} ORDER BY id LIMIT ?", [*params, limit + 1]
-            ).fetchall()
+                params += (kind,)
+            rows = self.date_rows(db, "messages", cursor, limit, order, where, params)
         messages = [Message.model_validate(dict(row)) for row in rows[:limit]]
         return MessagePage(
             messages=messages,

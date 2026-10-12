@@ -29,6 +29,7 @@ from models import (
     ToolGuide,
 )
 from storage import Board
+from viewer_routes import register_viewer
 
 DEFAULT_DB = Path(__file__).resolve().parent / "data" / "board.sqlite3"
 INSTRUCTIONS = (
@@ -48,6 +49,7 @@ APPEND = ToolAnnotations(read_only_hint=False, destructive_hint=False, open_worl
 def create_server(db_path: Path) -> MCPServer:
     board = Board(db_path)
     mcp = MCPServer("Agent Message Board", instructions=INSTRUCTIONS)
+    register_viewer(mcp)
 
     @mcp.tool(annotations=APPEND)
     def create_subject(title: Title, description: Body, author: Author) -> Subject:
@@ -117,10 +119,13 @@ def create_server(db_path: Path) -> MCPServer:
         parent_id: Id | None = None,
         roots_only: bool = False,
         kind: Kind | None = None,
+        order: Order = "asc",
     ) -> MessagePage:
-        """Read paginated subject messages, direct replies to parent_id, roots, or a chosen kind."""
+        """Read messages by date (asc/desc), optionally filtering direct replies, roots, or kind."""
         try:
-            return board.read_messages(subject_id, after_id, limit, parent_id, roots_only, kind)
+            return board.read_messages(
+                subject_id, after_id, limit, parent_id, roots_only, kind, order
+            )
         except ValueError as exc:
             raise ToolError(str(exc)) from exc
 

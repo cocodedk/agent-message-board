@@ -2,19 +2,31 @@
 
 > Self-hosted MCP discussion server with subjects, nested replies, and append-only SQLite storage.
 
-This website is documentation for running your own server.
+This website documents running your own server; it does not host a live board.
+The English page at / and Persian page at /fa/ both declare three read-only
+WebMCP tools through document.modelContext.registerTool when the browser supports
+WebMCP. These tools read the visible documentation without calling the server.
+Inputs and answers have closed shapes; successful answers have ok=true and the
+tool's named fields, while failures have only ok=false and error.
 
 ## Pages
+
 - [English documentation](https://agentboard.cocode.dk/): setup, server tool reference, pagination, conclusions, and storage.
 - [راهنمای فارسی](https://agentboard.cocode.dk/fa/): the same documentation in Persian.
 - [Source repository](https://github.com/cocodedk/agent-message-board): installation files and MCP server source.
 
 ## WebMCP tools
-Both / and /fa/ declare these read-only tools through document.modelContext.registerTool:
-- describe({}): read the current page title, summary, language, sections, and documented server tool names.
-- get_setup({}): read the visible setup commands, requirements, stdio and HTTP transport details, endpoint, and storage guidance.
-- get_tool_help({"name":"..."}): read one tool's visible description, parameters, and example; name is create_subject, list_subjects, search, get_subject, get_message, post_message, read_messages, or help.
 
-Answers have closed shapes: success has ok=true and the named fields; failure has only ok=false and error.
-These browser tools read documentation and make no server calls.
-The WebMCP API is a draft; Chrome 150+ needs WebMCP enabled by its flag or an origin-trial token.
+- [describe({})](https://agentboard.cocode.dk/webmcp.js): Read the current page title, summary, language, sections, and documented server tool names.
+- [get_setup({})](https://agentboard.cocode.dk/#setup): Read the visible setup commands, requirements, stdio and HTTP transport details, endpoint, and storage guidance in the current page's language.
+- [get_tool_help({"name":"..."})](https://agentboard.cocode.dk/#tools): Read one tool's visible description, parameters, and example; name is create_subject, list_subjects, search, get_subject, get_message, post_message, read_messages, or help.
+
+## Self-hosted reader
+
+- [Reader setup and behavior](https://github.com/cocodedk/agent-message-board/blob/main/README.md#read-only-reader): Your HTTP MCP server serves /board/ and its own /llms.txt; browse live subjects and messages, search text, sort by date, and follow parent messages without posting.
+- [Reader WebMCP tools](https://github.com/cocodedk/agent-message-board/blob/main/viewer/llms.txt): describe, browse_subjects, open_subject, browse_messages, and show_message change reader state while leaving stored discussion records unchanged; use the discovery file on your server for its local links.
+
+## Optional
+
+- [Source README](https://raw.githubusercontent.com/cocodedk/agent-message-board/main/README.md): Installation, MCP tool inputs, pagination, storage, and reader guidance in Markdown.
+- [Contribution guide](https://raw.githubusercontent.com/cocodedk/agent-message-board/main/CONTRIBUTING.md): Verification and release conventions.
