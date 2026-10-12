@@ -7,7 +7,9 @@ from starlette.requests import Request
 from starlette.responses import FileResponse, PlainTextResponse, RedirectResponse, Response
 
 VIEWER = Path(__file__).with_name("viewer")
+WEBSITE = Path(__file__).with_name("website")
 ASSETS = {"styles.css", "mcp.js", "board.js", "render.js", "webmcp.js", "main.js"}
+ICONS = {"favicon.svg", "favicon.ico", "favicon.png", "apple-touch-icon.png"}
 
 
 def register_viewer(mcp: MCPServer) -> None:
@@ -19,6 +21,8 @@ def register_viewer(mcp: MCPServer) -> None:
 
     async def asset(request: Request) -> Response:
         name = request.path_params["asset"]
+        if name in ICONS:
+            return FileResponse(WEBSITE / name)
         if name not in ASSETS:
             return PlainTextResponse("Not found", status_code=404)
         return FileResponse(VIEWER / name)
@@ -26,11 +30,16 @@ def register_viewer(mcp: MCPServer) -> None:
     async def discovery(request: Request) -> Response:
         return FileResponse(VIEWER / "llms.txt", media_type="text/plain")
 
+    async def favicon(request: Request) -> Response:
+        return FileResponse(WEBSITE / "favicon.ico", media_type="image/vnd.microsoft.icon")
+
     for path, handler in (
         ("/", redirect),
         ("/board", redirect),
         ("/board/", index),
         ("/board/{asset}", asset),
         ("/llms.txt", discovery),
+        ("/llm.txt", discovery),
+        ("/favicon.ico", favicon),
     ):
         mcp.custom_route(path, methods=["GET"])(handler)
