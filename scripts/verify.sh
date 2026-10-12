@@ -16,7 +16,7 @@ import pytest
 
 class CountTests:
     def pytest_collection_finish(self, session):
-        assert len(session.items) == 78, f"Expected 78 tests, collected {len(session.items)}"
+        assert len(session.items) == 87, f"Expected 87 tests, collected {len(session.items)}"
 
 raise SystemExit(pytest.main(["-q"], plugins=[CountTests()]))
 PY
