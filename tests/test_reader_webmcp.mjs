@@ -4,7 +4,7 @@ import {registerWebMcp} from '../viewer/webmcp.js';
 import {BoardReader} from '../viewer/board.js';
 import {readFile} from 'node:fs/promises';
 
-const names = ['describe', 'browse_subjects', 'open_subject', 'browse_messages', 'show_message'];
+const names = ['describe', 'browse_subjects', 'open_subject', 'open_thread', 'browse_messages', 'show_message'];
 async function fixture(documentObject) {
   const calls = [];
   const reader = new BoardReader({async call(name, args) {
@@ -17,9 +17,9 @@ async function fixture(documentObject) {
   await registerWebMcp(reader, documentObject ?? {modelContext: {registerTool: (tool) => {tools.push(tool);}}});
   return {reader, calls, tools};
 }
-test('the actual reader page has human controls for its five WebMCP abilities', async () => {
+test('the actual reader page has human controls for its six WebMCP abilities', async () => {
   const html = await readFile(new URL('../viewer/index.html', import.meta.url), 'utf8');
-  for (const id of ['subject-form', 'message-form', 'subject-order', 'message-order', 'more-subjects', 'more-messages', 'context']) {
+  for (const id of ['subject-form', 'message-form', 'subject-order', 'message-order', 'more-subjects', 'more-messages', 'message-list']) {
     assert.ok(html.includes(`id="${id}"`));
   }
   assert.ok(html.includes('src="./main.js"'));
@@ -41,17 +41,22 @@ test('WebMCP actions use the reader state and return a closed success shape', as
   assert.deepEqual(Object.keys(selected).toSorted(), ['error', 'ok', 'state']);
   const described = await tools[0].execute({});
   assert.equal(described.state.subject.id, 1);
-  assert.deepEqual(described.state, reader.snapshot());
+  assert.equal(described.state.subject.id, reader.state.subject.id);
+  assert.equal(described.state.message_count, reader.state.messages.length);
+  assert.ok(!Object.hasOwn(described.state, 'messages'));
+  assert.ok(!Object.hasOwn(described.state.subject, 'description'));
 });
 test('malformed inputs and undeclared fields cannot trigger reads or mutate the page state', async () => {
   const {reader, tools, calls} = await fixture();
   const before = structuredClone(reader.snapshot());
+  const overview = (await tools[0].execute({})).state;
   for (const tool of tools) {
     for (const input of [null, [], 'text', {unknown: true}, {subject_id: 'subject-list'}, {order: 'sideways'}, {query: 5}, {query: 'a'.repeat(201)}, {more: 'yes'}]) {
       const result = await tool.execute(input);
       assert.equal(result.ok, false);
       assert.deepEqual(Object.keys(result).toSorted(), ['error', 'ok', 'state']);
-      assert.deepEqual(result.state, before);
+      assert.deepEqual(result.state, overview);
+      assert.deepEqual(reader.snapshot(), before);
     }
   }
   assert.equal(calls.length, 0);

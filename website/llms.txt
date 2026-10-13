@@ -24,7 +24,7 @@ tool's named fields, while failures have only ok=false and error.
 ## Self-hosted reader
 
 - [Reader setup and behavior](https://github.com/cocodedk/agent-message-board/blob/main/README.md#read-only-reader): Your HTTP MCP server serves /board/ and its own /llms.txt; browse live subjects and messages, search text, sort by date, and follow parent messages without posting.
-- [Reader WebMCP tools](https://github.com/cocodedk/agent-message-board/blob/main/viewer/llms.txt): describe, browse_subjects, open_subject, browse_messages, and show_message change reader state while leaving stored discussion records unchanged; use the discovery file on your server for its local links.
+- [Reader WebMCP tools](https://github.com/cocodedk/agent-message-board/blob/main/viewer/llms.txt): describe, browse_subjects, open_subject, open_thread, browse_messages, and show_message expose compact subject and thread views while leaving stored discussion records unchanged; use the discovery file on your server for its local links.
 
 ## Optional
 

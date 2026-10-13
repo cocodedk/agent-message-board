@@ -1,3 +1,5 @@
+import {overview, subjectSummary, messagePreview} from './content.js';
+
 const object = (input, keys) => input !== null && typeof input === 'object'
   && !Array.isArray(input) && Object.keys(input).every((key) => keys.includes(key));
 const id = (value) => Number.isSafeInteger(value) && value > 0;
@@ -10,7 +12,7 @@ const browseInput = (input) => object(input, ['query', 'order', 'more'])
   && (input.more === undefined || typeof input.more === 'boolean');
 
 export async function registerWebMcp(reader, documentObject = document) {
-  const tool = (name, description, inputSchema, validate, run, readOnlyHint = false) => ({
+  const tool = (name, description, inputSchema, validate, run, project = overview, readOnlyHint = false) => ({
     name, description, inputSchema,
     annotations: {readOnlyHint, consequentialHint: false, untrustedContentHint: true},
     async execute(input, options = {}) {
@@ -18,25 +20,37 @@ export async function registerWebMcp(reader, documentObject = document) {
         if (!validate(input)) throw new Error('Invalid input; use the declared fields, types, and values.');
         options.signal?.throwIfAborted();
         const state = await run(input, options.signal);
-        return {ok: true, error: null, state};
-      } catch (error) { return {ok: false, error: error.message, state: reader.snapshot()}; }
+        return {ok: true, error: null, state: project(state)};
+      } catch (error) { return {ok: false, error: error.message, state: overview(reader.snapshot())}; }
     },
   });
   const tools = [
-    tool('describe', 'Read the current reader filters, loaded subjects and messages, selected subject, cursors, and message context.',
-      schema(), (input) => object(input, []), () => reader.snapshot(), true),
-    tool('browse_subjects', 'Show a page of subjects using a text search and newest or oldest date order, or load the next page with the same filters.',
-      browseSchema, browseInput, (input, signal) => reader.browseSubjects(input, signal)),
-    tool('open_subject', 'Select a subject and show its original question and first page of messages in the reader.',
-      schema({subject_id: {type: 'integer', minimum: 1}}, ['subject_id']),
-      (input) => object(input, ['subject_id']) && id(input.subject_id),
-      (input, signal) => reader.openSubject(input.subject_id, signal)),
-    tool('browse_messages', 'Show messages in the selected subject using a body search and newest or oldest date order, or load the next page with the same filters.',
-      browseSchema, browseInput, (input, signal) => reader.browseMessages(input, signal)),
-    tool('show_message', 'Show a message from the selected subject in the context panel, or clear that panel with a null message_id.',
-      schema({message_id: {type: ['integer', 'null'], minimum: 1}}),
-      (input) => object(input, ['message_id']) && (input.message_id === undefined || input.message_id === null || id(input.message_id)),
-      (input, signal) => reader.showMessage(input.message_id, signal)),
+    tool('describe', 'Read reader filters, selection metadata, page counts, and cursors without question descriptions or message bodies.',
+      schema(), (input) => object(input, []), () => reader.snapshot(), overview, true),
+    tool('browse_subjects', 'Show up to ten subject titles and metadata matching a search and date order, or replace them with the next page.',
+      browseSchema, browseInput, (input, signal) => reader.browseSubjects(input, signal),
+      (state) => ({...overview(state), subjects: state.subjects.map(subjectSummary)})),
+    tool('open_subject', 'Open a subject with its original question and ten root-thread previews, optionally expanding its description on screen.',
+      schema({subject_id: {type: 'integer', minimum: 1}, expand_description: {type: 'boolean'}}, ['subject_id']),
+      (input) => object(input, ['subject_id', 'expand_description']) && id(input.subject_id)
+        && (input.expand_description === undefined || typeof input.expand_description === 'boolean'),
+      (input, signal) => reader.openSubject(input.subject_id, signal, input.expand_description),
+      (state) => ({...overview(state), subject: state.subject, messages: state.messages.map(messagePreview)})),
+    tool('open_thread', 'Open one message as a thread with its full text and up to ten direct-reply previews, without nested descendants.',
+      schema({message_id: {type: 'integer', minimum: 1}}, ['message_id']),
+      (input) => object(input, ['message_id']) && id(input.message_id),
+      (input, signal) => reader.openThread(input.message_id, signal),
+      (state) => ({...overview(state), thread: state.thread, messages: state.messages.map(messagePreview)})),
+    tool('browse_messages', 'Browse ten root threads or direct replies in the current view, or search all message bodies in the selected subject with 160-character previews.',
+      browseSchema, browseInput, (input, signal) => reader.browseMessages(input, signal),
+      (state) => ({...overview(state), messages: state.messages.map(messagePreview)})),
+    tool('show_message', 'Read one message in full inline at its row or after after_message_id, or collapse it with a null message_id.',
+      schema({message_id: {type: ['integer', 'null'], minimum: 1}, after_message_id: {type: 'integer', minimum: 1}}),
+      (input) => object(input, ['message_id', 'after_message_id'])
+        && (input.message_id === undefined || input.message_id === null || id(input.message_id))
+        && (input.after_message_id === undefined || id(input.after_message_id)),
+      (input, signal) => reader.showMessage(input.message_id, signal, input.after_message_id),
+      (state) => ({...overview(state), context: state.context})),
   ];
   try {
     const registry = documentObject.modelContext;
