@@ -37,7 +37,6 @@ button:disabled { opacity: .55; cursor: default; }
 .body, #subject-description { white-space: pre-wrap; overflow-wrap: anywhere; }
 .parent { display: block; font-size: 15px; margin-top: 10px; color: var(--teal); }
 #context { padding: 16px; background: var(--paper); border-inline-start: 3px solid var(--teal); margin: 18px 0 28px; }
-#context .message { border: 0; padding-bottom: 0; }
 #more-subjects, #more-messages { margin-top: 20px; }
 [hidden] { display: none; }
 @media (max-width: 700px) {

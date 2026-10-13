@@ -40,6 +40,8 @@ def test_reader_serves_fixed_assets_and_read_only_discovery(tmp_path: Path) -> N
                     "render.js",
                     "webmcp.js",
                     "main.js",
+                    "content.js",
+                    "navigation.js",
                 ):
                     assert (await http.get(f"/board/{asset}")).status_code == 200
                 assert "browse_messages" in (await http.get("/llms.txt")).text

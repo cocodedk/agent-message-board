@@ -2,8 +2,10 @@ import {BoardReader} from './board.js';
 import {ReadMcp} from './mcp.js';
 import {render} from './render.js';
 import {registerWebMcp} from './webmcp.js';
+import {bindNavigation} from './navigation.js';
 
 const reader = new BoardReader(new ReadMcp(), render);
+const loadFromUrl = bindNavigation(reader);
 const safely = (operation) => { Promise.resolve().then(operation).catch(() => {}); };
 const byId = (id) => document.getElementById(id);
 byId('subject-form').addEventListener('submit', (event) => {
@@ -27,13 +29,19 @@ byId('subject-list').addEventListener('click', (event) => {
 byId('more-subjects').addEventListener('click', () => safely(() => reader.browseSubjects({more: true})));
 byId('more-messages').addEventListener('click', () => safely(() => reader.browseMessages({more: true})));
 byId('refresh').addEventListener('click', () => safely(() => reader.refresh()));
-for (const container of ['message-list', 'context']) {
-  byId(container).addEventListener('click', (event) => {
+byId('message-list').addEventListener('click', (event) => {
+    const read = event.target.closest('[data-read-message]');
+    if (read) safely(() => reader.showMessage(Number(read.dataset.readMessage)));
     const parent = event.target.closest('[data-parent]');
-    if (parent) safely(() => reader.showMessage(Number(parent.dataset.parent)));
+    if (parent) {
+      const anchor = parent.closest('#context') ? reader.state.context_anchor_id
+        : Number(parent.closest('[data-message]').dataset.message);
+      safely(() => reader.showMessage(Number(parent.dataset.parent), undefined,
+        anchor));
+    }
     if (event.target.closest('[data-close-context]')) safely(() => reader.showMessage(null));
-  });
-}
+});
 render(reader);
 void registerWebMcp(reader);
 safely(() => reader.browseSubjects());
+safely(loadFromUrl);

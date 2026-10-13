@@ -73,17 +73,17 @@ test('subject searches and subsequent pages keep the requested date order and cu
   await reader.browseSubjects({query: ' SQLite ', order: 'asc'});
   await reader.browseSubjects({more: true});
   assert.deepEqual(calls.map((r) => r.args), [
-    {query: 'SQLite', scope: 'subjects', order: 'asc', limit: 25, after_id: 0},
-    {query: 'SQLite', scope: 'subjects', order: 'asc', limit: 25, after_id: 1},
+    {query: 'SQLite', scope: 'subjects', order: 'asc', limit: 10, after_id: 0},
+    {query: 'SQLite', scope: 'subjects', order: 'asc', limit: 10, after_id: 1},
   ]);
-  assert.equal(reader.state.subjects.length, 2);
+  assert.equal(reader.state.subjects.length, 1);
   assert.equal(reader.state.next_subject_cursor, null);
 });
 test('message searches stay within the selected subject and ask MCP for date sorting', async () => {
   const {reader, calls} = mockBoard();
   await reader.openSubject(3);
   await reader.browseMessages({query: ' evidence ', order: 'asc'});
-  assert.deepEqual(calls.at(-1), {name: 'search', args: {subject_id: 3, query: 'evidence', scope: 'messages', order: 'asc', limit: 50, after_id: 0}});
+  assert.deepEqual(calls.at(-1), {name: 'search', args: {subject_id: 3, query: 'evidence', scope: 'messages', order: 'asc', limit: 10, after_id: 0}});
 });
 test('changing filters while loading another page is rejected instead of mixing result sets', async () => {
   const {reader} = mockBoard();

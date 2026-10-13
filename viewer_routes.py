@@ -8,7 +8,16 @@ from starlette.responses import FileResponse, PlainTextResponse, RedirectRespons
 
 VIEWER = Path(__file__).with_name("viewer")
 WEBSITE = Path(__file__).with_name("website")
-ASSETS = {"styles.css", "mcp.js", "board.js", "render.js", "webmcp.js", "main.js"}
+ASSETS = {
+    "styles.css",
+    "mcp.js",
+    "board.js",
+    "render.js",
+    "webmcp.js",
+    "main.js",
+    "content.js",
+    "navigation.js",
+}
 ICONS = {"favicon.svg", "favicon.ico", "favicon.png", "apple-touch-icon.png"}
 
 

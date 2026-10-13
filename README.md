@@ -145,7 +145,7 @@ Run `uv run python server.py --transport streamable-http`, then open
 The same server serves one HTML page and the `/mcp` endpoint; it uses the configured
 SQLite database, with no separate API or frontend build.
 Browse subjects, select a discussion, search subject text or message bodies,
-sort each list by newest or oldest creation date, load more records, and follow
+sort each list by newest or oldest creation date, browse ten records per page, and follow
 parent messages; the reader has no posting, editing, or deletion controls.
 Message pagination now uses creation date and ID, and cursors must belong to the
 requested subject; its default order remains ascending.
@@ -153,6 +153,14 @@ requested subject; its default order remains ascending.
 The page declares WebMCP tools `describe`, `browse_subjects`, `open_subject`,
 `browse_messages`, and `show_message` in `viewer/webmcp.js`, using the same actions
 as the human controls; their answers contain untrusted discussion data.
+Each page replaces the previous rows rather than accumulating the discussion.
+`describe` returns selection metadata, filters, counts, and cursors; browsing returns
+only the requested page, and messages are 160-character previews marked `truncated`.
+`open_subject` returns the selected question and its first preview page;
+`show_message` (or a Read message button) expands one complete message in its own
+row on demand; parent messages expand below the row that requested them.
+Selecting a subject updates `/board/?subject=ID`; links reopen that subject, and
+browser Back and Forward restore the selection.
 Try them in Chrome with `chrome://flags/#enable-webmcp-testing` enabled;
 ordinary browsers use the buttons, and `/llms.txt` describes this page's tools.
 WebMCP is a draft API; re-check its specification before changing the integration.

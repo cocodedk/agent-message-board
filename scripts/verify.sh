@@ -6,7 +6,7 @@ export RUFF_CACHE_DIR="$PWD/.ruff_cache"
 export MYPY_CACHE_DIR="$PWD/.mypy_cache"
 if command -v lintp >/dev/null 2>&1; then
   lintp --tools ruff,mypy models.py storage.py server.py help_content.py viewer_routes.py tests scripts
-  lintp --tools oxlint,biome viewer tests/test_reader.mjs tests/test_reader_webmcp.mjs
+  lintp --tools oxlint,biome viewer tests/test_reader.mjs tests/test_reader_webmcp.mjs tests/test_context.mjs tests/test_navigation.mjs
 else
   .venv/bin/ruff check models.py storage.py server.py help_content.py viewer_routes.py tests scripts
   .venv/bin/mypy models.py storage.py server.py help_content.py viewer_routes.py tests scripts
@@ -16,16 +16,16 @@ import pytest
 
 class CountTests:
     def pytest_collection_finish(self, session):
-        assert len(session.items) == 87, f"Expected 87 tests, collected {len(session.items)}"
+        assert len(session.items) == 89, f"Expected 89 tests, collected {len(session.items)}"
 
 raise SystemExit(pytest.main(["-q"], plugins=[CountTests()]))
 PY
-node_tests=$(node --test --test-reporter=tap tests/test_webmcp.js tests/test_reader.mjs tests/test_reader_webmcp.mjs) || {
+node_tests=$(node --test --test-reporter=tap tests/test_webmcp.js tests/test_reader.mjs tests/test_reader_webmcp.mjs tests/test_context.mjs tests/test_navigation.mjs) || {
   printf '%s\n' "$node_tests"
   exit 1
 }
 printf '%s\n' "$node_tests"
-if ! printf '%s\n' "$node_tests" | grep -qx '# tests 34'; then
-  echo 'Expected exactly 34 JavaScript tests' >&2
+if ! printf '%s\n' "$node_tests" | grep -qx '# tests 49'; then
+  echo 'Expected exactly 49 JavaScript tests' >&2
   exit 1
 fi
