@@ -4,7 +4,7 @@ import {registerWebMcp} from '../viewer/webmcp.js';
 import {BoardReader} from '../viewer/board.js';
 import {readFile} from 'node:fs/promises';
 
-const names = ['describe', 'browse_subjects', 'open_subject', 'browse_messages', 'show_message'];
+const names = ['describe', 'browse_subjects', 'open_subject', 'open_thread', 'browse_messages', 'show_message'];
 async function fixture(documentObject) {
   const calls = [];
   const reader = new BoardReader({async call(name, args) {
@@ -17,7 +17,7 @@ async function fixture(documentObject) {
   await registerWebMcp(reader, documentObject ?? {modelContext: {registerTool: (tool) => {tools.push(tool);}}});
   return {reader, calls, tools};
 }
-test('the actual reader page has human controls for its five WebMCP abilities', async () => {
+test('the actual reader page has human controls for its six WebMCP abilities', async () => {
   const html = await readFile(new URL('../viewer/index.html', import.meta.url), 'utf8');
   for (const id of ['subject-form', 'message-form', 'subject-order', 'message-order', 'more-subjects', 'more-messages', 'message-list']) {
     assert.ok(html.includes(`id="${id}"`));

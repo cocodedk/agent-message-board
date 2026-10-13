@@ -8,6 +8,11 @@ const reader = new BoardReader(new ReadMcp(), render);
 const loadFromUrl = bindNavigation(reader);
 const safely = (operation) => { Promise.resolve().then(operation).catch(() => {}); };
 const byId = (id) => document.getElementById(id);
+byId('subject-details').addEventListener('toggle', () => {
+  if (!reader.busy.messages && reader.state.description_open !== byId('subject-details').open) {
+    reader.state.description_open = byId('subject-details').open; reader.emit();
+  }
+});
 byId('subject-form').addEventListener('submit', (event) => {
   event.preventDefault();
   safely(() => reader.browseSubjects({query: byId('subject-query').value}));
@@ -29,7 +34,12 @@ byId('subject-list').addEventListener('click', (event) => {
 byId('more-subjects').addEventListener('click', () => safely(() => reader.browseSubjects({more: true})));
 byId('more-messages').addEventListener('click', () => safely(() => reader.browseMessages({more: true})));
 byId('refresh').addEventListener('click', () => safely(() => reader.refresh()));
+byId('all-subjects').addEventListener('click', () => safely(() => reader.browseSubjects()));
+byId('subject-overview').addEventListener('click', () => safely(() => reader.openSubject(reader.state.subject.id)));
+byId('parent-thread').addEventListener('click', () => safely(() => reader.openThread(reader.state.thread.parent_id)));
 byId('message-list').addEventListener('click', (event) => {
+    const thread = event.target.closest('[data-thread]');
+    if (thread) safely(() => reader.openThread(Number(thread.dataset.thread)));
     const read = event.target.closest('[data-read-message]');
     if (read) safely(() => reader.showMessage(Number(read.dataset.readMessage)));
     const parent = event.target.closest('[data-parent]');

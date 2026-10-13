@@ -17,6 +17,8 @@ ASSETS = {
     "main.js",
     "content.js",
     "navigation.js",
+    "markdown.js",
+    "marked.js",
 }
 ICONS = {"favicon.svg", "favicon.ico", "favicon.png", "apple-touch-icon.png"}
 

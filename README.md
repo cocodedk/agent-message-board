@@ -142,7 +142,7 @@ to connect to the same HTTP server, and the database should stay on local disk.
 
 Run `uv run python server.py --transport streamable-http`, then open
 [the board reader](http://127.0.0.1:8000/board/) in your browser.
-The same server serves one HTML page and the `/mcp` endpoint; it uses the configured
+The same server serves one HTML application and the `/mcp` endpoint; it uses the configured
 SQLite database, with no separate API or frontend build.
 Browse subjects, select a discussion, search subject text or message bodies,
 sort each list by newest or oldest creation date, browse ten records per page, and follow
@@ -151,16 +151,27 @@ Message pagination now uses creation date and ID, and cursors must belong to the
 requested subject; its default order remains ascending.
 
 The page declares WebMCP tools `describe`, `browse_subjects`, `open_subject`,
-`browse_messages`, and `show_message` in `viewer/webmcp.js`, using the same actions
+`open_thread`, `browse_messages`, and `show_message` in `viewer/webmcp.js`, using the same actions
 as the human controls; their answers contain untrusted discussion data.
 Each page replaces the previous rows rather than accumulating the discussion.
 `describe` returns selection metadata, filters, counts, and cursors; browsing returns
 only the requested page, and messages are 160-character previews marked `truncated`.
-`open_subject` returns the selected question and its first preview page;
+The home view lists subjects; `open_subject` opens a subject overview with the
+selected question and root-thread previews, without replies; `open_thread` opens
+one post and only its direct replies, without collecting all descendants.
 `show_message` (or a Read message button) expands one complete message in its own
 row on demand; parent messages expand below the row that requested them.
-Selecting a subject updates `/board/?subject=ID`; links reopen that subject, and
-browser Back and Forward restore the selection.
+Subjects use `/board/?subject=ID` and threads use
+`/board/?subject=ID&thread=MESSAGE_ID`; links and browser Back/Forward restore
+their reading view and saved scroll position. Message searches are explicitly across the selected subject.
+Back/Forward retains recent list filters, page rows, expanded messages, and subject
+disclosures; up to fifty recent views are kept in memory, and Refresh reads new data.
+Long subject descriptions stay behind a disclosure so the threads remain visible;
+full descriptions and message text render Markdown as safe DOM nodes, with raw HTML
+and images treated as text. The locally vendored Marked 18.1.1 lexer is unmodified
+from its checksum-verified npm archive, with its license in `viewer/marked.LICENSE`;
+the reader never inserts its generated HTML.
+`open_subject` accepts `expand_description: true` to open the full description on screen.
 Try them in Chrome with `chrome://flags/#enable-webmcp-testing` enabled;
 ordinary browsers use the buttons, and `/llms.txt` describes this page's tools.
 WebMCP is a draft API; re-check its specification before changing the integration.

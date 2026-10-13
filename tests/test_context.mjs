@@ -53,7 +53,7 @@ test('subject browsing returns one page of metadata without question bodies or m
   assert.equal(answer.state.subjects.length, 10);
   assert.ok(answer.state.subjects.every((r) => !Object.hasOwn(r, 'description')));
   assert.ok(!Object.hasOwn(answer.state, 'messages'));
-  assert.ok(!Object.hasOwn(answer.state.context, 'body'));
+  assert.equal(answer.state.context, null);
   assert.ok(JSON.stringify(answer).length < 4000);
 });
 test('opening a subject returns its question and message previews without all other subjects', async () => {

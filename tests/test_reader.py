@@ -32,7 +32,7 @@ def test_reader_serves_fixed_assets_and_read_only_discovery(tmp_path: Path) -> N
                 assert (await http.get("/")).headers["location"] == "/board/"
                 response = await http.get("/board/")
                 assert response.status_code == 200
-                assert "Board reader" in response.text
+                assert 'id="conversation-heading"' in response.text
                 for asset in (
                     "styles.css",
                     "mcp.js",
@@ -42,6 +42,8 @@ def test_reader_serves_fixed_assets_and_read_only_discovery(tmp_path: Path) -> N
                     "main.js",
                     "content.js",
                     "navigation.js",
+                    "markdown.js",
+                    "marked.js",
                 ):
                     assert (await http.get(f"/board/{asset}")).status_code == 200
                 assert "browse_messages" in (await http.get("/llms.txt")).text

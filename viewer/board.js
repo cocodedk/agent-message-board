@@ -7,7 +7,8 @@ export class BoardReader {
     this.state = {
       subject_query: '', subject_order: 'desc', subjects: [], subject: null,
       next_subject_cursor: null, message_query: '', message_order: 'desc',
-      messages: [], next_message_cursor: null, context: null, context_anchor_id: null,
+      messages: [], next_message_cursor: null, thread: null, context: null, context_anchor_id: null,
+      description_open: false,
     };
     this.busy = {subjects: false, messages: false, context: false};
     this.errors = {subjects: null, messages: null, context: null};
@@ -59,6 +60,7 @@ export class BoardReader {
     }
     const after_id = more ? s.next_subject_cursor : 0;
     if (more && after_id === null) throw new Error('There are no more subjects; refresh or change the search.');
+    this.closeSubject();
     s.subject_query = query; s.subject_order = order;
     if (!more) { s.subjects = []; s.next_subject_cursor = null; }
     const args = {after_id, limit: PAGE_SIZE, order};
@@ -70,16 +72,35 @@ export class BoardReader {
     }, signal);
   }
 
-  openSubject(subject_id, signal) {
+  openSubject(subject_id, signal, description_open = false) {
     this.cancel('context');
     const s = this.state;
-    s.subject = null; s.messages = []; s.context = null; s.context_anchor_id = null;
+    s.subject = null; s.thread = null; s.messages = []; s.context = null; s.context_anchor_id = null;
     s.message_query = ''; s.next_message_cursor = null;
+    s.description_open = false;
     return this.perform('messages', (requestSignal) => Promise.all([
       this.client.call('get_subject', {subject_id}, requestSignal),
-      this.client.call('read_messages', {subject_id, limit: PAGE_SIZE, order: s.message_order}, requestSignal),
+      this.client.call('read_messages', {subject_id, limit: PAGE_SIZE, order: s.message_order, roots_only: true}, requestSignal),
     ]), ([subject, page]) => {
-      s.subject = subject; s.messages = page.messages; s.next_message_cursor = page.next_after_id;
+      s.subject = subject; s.description_open = description_open;
+      s.messages = page.messages; s.next_message_cursor = page.next_after_id;
+    }, signal);
+  }
+
+  openThread(message_id, signal) {
+    const s = this.state;
+    if (!s.subject) throw new Error('Open a subject first.');
+    const subject_id = s.subject.id;
+    this.cancel('context');
+    s.thread = null; s.context = null; s.context_anchor_id = null;
+    s.messages = []; s.message_query = ''; s.next_message_cursor = null;
+    return this.perform('messages', (requestSignal) => Promise.all([
+      this.client.call('get_message', {message_id}, requestSignal),
+      this.client.call('read_messages', {subject_id, parent_id: message_id,
+        limit: PAGE_SIZE, order: s.message_order}, requestSignal),
+    ]), ([thread, page]) => {
+      if (thread.subject_id !== subject_id) throw new Error('This thread is in another subject.');
+      s.thread = thread; s.messages = page.messages; s.next_message_cursor = page.next_after_id;
     }, signal);
   }
 
@@ -94,12 +115,14 @@ export class BoardReader {
     const after_id = more ? s.next_message_cursor : 0;
     if (more && after_id === null) throw new Error('There are no more messages; refresh or change the search.');
     this.cancel('context'); s.context = null; s.context_anchor_id = null;
+    if (query) s.thread = null;
     s.message_query = query; s.message_order = order;
     if (!more) { s.messages = []; s.next_message_cursor = null; }
     const args = {subject_id: s.subject.id, after_id, limit: PAGE_SIZE, order};
     return this.perform('messages', (requestSignal) => query
       ? this.client.call('search', {...args, query, scope: 'messages'}, requestSignal)
-      : this.client.call('read_messages', args, requestSignal), (page) => {
+      : this.client.call('read_messages', {...args, ...(s.thread
+        ? {parent_id: s.thread.id} : {roots_only: true})}, requestSignal), (page) => {
       s.messages = page.messages;
       s.next_message_cursor = page.next_after_id;
     }, signal);
@@ -127,14 +150,12 @@ export class BoardReader {
 
   closeSubject() {
     this.cancel('messages'); this.cancel('context');
-    Object.assign(this.state, {subject: null, messages: [], message_query: '',
-      next_message_cursor: null, context: null, context_anchor_id: null});
+    Object.assign(this.state, {subject: null, thread: null, messages: [], message_query: '',
+      next_message_cursor: null, context: null, context_anchor_id: null, description_open: false});
     this.emit();
   }
 
   async refresh() {
-    const reads = [this.browseSubjects()];
-    if (this.state.subject) reads.push(this.browseMessages());
-    await Promise.allSettled(reads);
+    await Promise.allSettled([this.state.subject ? this.browseMessages() : this.browseSubjects()]);
   }
 }
