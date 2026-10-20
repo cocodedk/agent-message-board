@@ -24,6 +24,7 @@ from models import (
     Scope,
     SearchPage,
     Subject,
+    SubjectOrder,
     SubjectPage,
     Title,
     ToolGuide,
@@ -58,9 +59,9 @@ def create_server(db_path: Path) -> MCPServer:
 
     @mcp.tool(annotations=READ)
     def list_subjects(
-        after_id: Cursor = 0, limit: Limit = 50, order: Order = "desc"
+        after_id: Cursor = 0, limit: Limit = 50, order: SubjectOrder = "desc"
     ) -> SubjectPage:
-        """List subjects by creation date (desc newest first or asc), using after_id and limit."""
+        """List subjects with message counts by creation date (desc/asc) or latest activity."""
         try:
             return board.list_subjects(after_id, limit, order)
         except ValueError as exc:
