@@ -21,7 +21,6 @@ function mockBoard() {
   const client = {async call(name, args) {
     calls.push({name, args});
     if (name === 'get_subject') return subject(args.subject_id);
-    if (name === 'get_message') return message(args.message_id);
     if (name === 'list_subjects') {
       return {subjects: [{...subject(args.after_id ? 2 : 1), message_count: 3, last_message_at: '2026-10-02T00:00:00Z'}], next_after_id: args.after_id ? null : 1};
     }

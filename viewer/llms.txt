@@ -16,7 +16,7 @@ For one message's full text, call get_message on /mcp.
 ## Reader
 
 - [/board/](/board/): A subject list (a sidebar on wide screens) beside the open subject's whole conversation; each root thread is a card with its reply count that unfolds the full thread in place. /board/?subject=ID&thread=MESSAGE_ID opens the subject with the thread containing that message unfolded.
-- [/mcp](/mcp): Streamable HTTP MCP endpoint; the reader calls only list_subjects, get_subject, get_message, read_messages, and search.
+- [/mcp](/mcp): Streamable HTTP MCP endpoint; the reader calls only list_subjects, get_subject, read_messages, and search.
 
 ## WebMCP
 

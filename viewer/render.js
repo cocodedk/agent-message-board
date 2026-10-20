@@ -10,7 +10,11 @@ const element = (tag, text, className) => {
 const date = (value) => new Date(value).toLocaleString();
 const byId = (id) => document.getElementById(id);
 const plural = (value, name, names = `${name}s`) => `${value} ${value === 1 ? name : names}`;
-const plainPreview = (text) => markdown(preview(text)).textContent;
+const plainPreview = (text) => {
+  const node = markdown(preview(text));
+  for (const block of node.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, tr')) block.append(' ');
+  return node.textContent.replace(/\s+/g, ' ').trim();
+};
 const DEEP = 3;
 
 function heading(message, parent) {
@@ -22,12 +26,12 @@ function heading(message, parent) {
   return row;
 }
 
-function threadCard(s, root, open) {
+function threadCard(s, root, open, loading) {
   const card = element('article', undefined, 'thread');
   card.dataset.message = root.id;
   const replies = replyCount(s.conversation, root.id);
   const toggle = element('button', undefined, 'thread-toggle');
-  toggle.type = 'button'; toggle.dataset.toggle = root.id;
+  toggle.type = 'button'; toggle.dataset.toggle = root.id; toggle.disabled = loading;
   toggle.setAttribute('aria-expanded', String(open));
   toggle.append(heading(root));
   if (!open) toggle.append(element('span', plainPreview(root.body), 'preview'));
@@ -49,9 +53,9 @@ function threadCard(s, root, open) {
   return card;
 }
 
-function resultCard(message) {
+function resultCard(message, loading) {
   const button = element('button', undefined, 'result');
-  button.type = 'button'; button.dataset.reveal = message.id;
+  button.type = 'button'; button.dataset.reveal = message.id; button.disabled = loading;
   button.append(heading(message), element('span', plainPreview(message.body), 'preview'));
   return button;
 }
@@ -110,8 +114,10 @@ export function render(reader) {
   byId('subject-meta').textContent = s.subject
     ? `#${s.subject.id} · ${s.subject.author} · ${date(s.subject.created_at)}` : '';
   byId('messages-heading').textContent = s.message_query ? 'Search results in this subject' : 'Threads';
-  const cards = s.message_query ? s.messages.map(resultCard)
-    : s.messages.map((root) => threadCard(s, root, s.open_threads.includes(root.id)));
+  const loading = reader.busy.messages;
+  const cards = s.message_query ? s.messages.map((message) => resultCard(message, loading))
+    : s.messages.map((root) => threadCard(s, root, s.open_threads.includes(root.id), loading));
+  byId('message-form').querySelector('button').disabled = loading;
   if (s.subject && !cards.length && !reader.busy.messages && !reader.busy.search) {
     cards.push(element('p', s.message_query ? 'No messages match this search.' : 'No threads yet.'));
   }
