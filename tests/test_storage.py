@@ -1,9 +1,11 @@
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import closing
 from pathlib import Path
 
 import pytest
 
+from models import MessagePage
 from storage import Board
 
 
@@ -71,6 +73,61 @@ def test_message_pagination_with_interleaved_subjects(board: Board, subject_id: 
     assert board.read_messages(subject_id, messages[-1].id, 2, None, False, None).messages == []
 
 
+def test_receiver_is_optional(board: Board, subject_id: int) -> None:
+    broadcast = board.post_message(subject_id, "a", "To everyone", None, "message")
+    direct = board.post_message(subject_id, "b", "To a", broadcast.id, "message", "a")
+    assert (broadcast.author, broadcast.receiver) == ("a", None)
+    assert (direct.author, direct.receiver) == ("b", "a")
+    assert board.get_message(direct.id) == direct
+
+
+def test_addressed_to_spans_subjects_and_paginates(board: Board, subject_id: int) -> None:
+    other_id = board.create_subject("Other", "Question", "b").id
+    first = board.post_message(subject_id, "b", "One", None, "message", "a")
+    board.post_message(subject_id, "b", "To c", None, "message", "c")
+    board.post_message(subject_id, "b", "To everyone", None, "message")
+    second = board.post_message(other_id, "c", "Two", None, "proposal", "a")
+    third = board.post_message(other_id, "b", "Three", second.id, "challenge", "a")
+    page = board.addressed_to("a", 0, 2)
+    assert page.messages == [first, second]
+    assert page.next_after_id == second.id
+    last = MessagePage(messages=[third], next_after_id=None)
+    assert board.addressed_to("a", second.id, 2) == last
+    assert board.addressed_to("a", 0, 50, "desc").messages == [third, second, first]
+    assert board.addressed_to("nobody", 0, 50).messages == []
+    with pytest.raises(ValueError, match="addressed to the requested receiver"):
+        board.addressed_to("c", first.id, 50)
+
+
+def create_old_database(path: Path) -> None:
+    with closing(sqlite3.connect(path)) as db, db:
+        db.executescript(
+            "CREATE TABLE subjects (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,"
+            " description TEXT NOT NULL, author TEXT NOT NULL,"
+            " created_at TEXT NOT NULL DEFAULT 'then') STRICT;"
+            "CREATE TABLE messages (id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            " subject_id INTEGER NOT NULL, parent_id INTEGER, author TEXT NOT NULL,"
+            " body TEXT NOT NULL, kind TEXT NOT NULL,"
+            " created_at TEXT NOT NULL DEFAULT 'then', UNIQUE (id, subject_id)) STRICT;"
+            "INSERT INTO subjects (title, description, author) VALUES ('Old', 'Question', 'a');"
+            "INSERT INTO messages (subject_id, author, body, kind)"
+            " VALUES (1, 'a', 'Old', 'message');"
+        )
+
+
+def test_existing_database_gains_receiver_column(tmp_path: Path) -> None:
+    path = tmp_path / "old.sqlite3"
+    create_old_database(path)
+    board = Board(path)
+    assert board.get_message(1).receiver is None
+    assert board.post_message(1, "b", "New", 1, "message", "a").receiver == "a"
+    with board.connect() as db, pytest.raises(sqlite3.IntegrityError, match="CHECK"):
+        db.execute(
+            "INSERT INTO messages (subject_id, author, receiver, body, kind) "
+            "VALUES (1, 'a', ' ', 'Blank receiver', 'message')"
+        )
+
+
 def test_missing_subject_rejected(board: Board) -> None:
     with pytest.raises(ValueError, match="Subject 1 does not exist"):
         board.post_message(1, "a", "Hello", None, "message")
@@ -127,6 +184,15 @@ def test_database_rejects_cross_subject_insert(board: Board, subject_id: int) ->
             "VALUES (?, ?, 'a', 'Invalid', 'message')",
             (other_id, root.id),
         )
+
+
+def test_concurrent_opens_migrate_an_old_database_once(tmp_path: Path) -> None:
+    for round_ in range(5):
+        path = tmp_path / f"old-{round_}.sqlite3"
+        create_old_database(path)
+        with ThreadPoolExecutor(max_workers=8) as workers:
+            boards = list(workers.map(Board, [path] * 8))
+        assert boards[0].get_message(1).receiver is None
 
 
 def test_concurrent_writers_preserve_all_messages(board: Board, subject_id: int) -> None:

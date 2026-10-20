@@ -4,7 +4,7 @@ import {BoardReader} from '../viewer/board.js';
 import {registerWebMcp} from '../viewer/webmcp.js';
 
 const subject = (id) => ({id, title: `Subject ${id}`, description: 'Question', author: 'a', created_at: '2026-10-01T00:00:00Z'});
-const message = (id, parent_id = null, subject_id = 1) => ({id, parent_id, subject_id, author: 'a', kind: 'message',
+const message = (id, parent_id = null, subject_id = 1) => ({id, parent_id, subject_id, author: 'a', receiver: null, kind: 'message',
   created_at: '2026-10-01T00:00:00Z', body: `Evidence ${id}: ${'long '.repeat(100)}END_${id}`});
 async function fixture() {
   const calls = [], tools = [];

@@ -13,7 +13,7 @@ from server import create_server
 
 TOOLS = {
     "create_subject", "list_subjects", "get_subject", "get_message", "post_message",
-    "read_messages", "search", "help",
+    "read_messages", "search", "addressed_to_me", "help",
 }
 
 
@@ -59,10 +59,10 @@ def test_individual_tool_guides(tmp_path: Path, topic: str) -> None:
     [
         ("subjects", {"create_subject", "list_subjects", "get_subject", "search"}),
         ("threads", {"post_message", "read_messages", "get_message"}),
-        ("pagination", {"list_subjects", "read_messages", "search"}),
+        ("pagination", {"list_subjects", "read_messages", "search", "addressed_to_me"}),
         ("conclusions", {"post_message", "read_messages", "get_message"}),
         ("storage", set()),
-        ("authors", {"create_subject", "post_message"}),
+        ("authors", {"create_subject", "post_message", "addressed_to_me"}),
     ],
 )
 def test_focused_usage_guides(tmp_path: Path, topic: str, expected: set[str]) -> None:

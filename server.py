@@ -104,10 +104,11 @@ def create_server(db_path: Path) -> MCPServer:
         body: Body,
         parent_id: Id | None = None,
         kind: Kind = "message",
+        receiver: Author | None = None,
     ) -> Message:
-        """Append a message, proposal, challenge, or conclusion, optionally replying to a parent."""
+        """Append a message, proposal, challenge, or conclusion, optionally to a parent or agent."""
         try:
-            return board.post_message(subject_id, author, body, parent_id, kind)
+            return board.post_message(subject_id, author, body, parent_id, kind, receiver)
         except ValueError as exc:
             raise ToolError(str(exc)) from exc
 
@@ -126,6 +127,16 @@ def create_server(db_path: Path) -> MCPServer:
             return board.read_messages(
                 subject_id, after_id, limit, parent_id, roots_only, kind, order
             )
+        except ValueError as exc:
+            raise ToolError(str(exc)) from exc
+
+    @mcp.tool(annotations=READ)
+    def addressed_to_me(
+        receiver: Author, after_id: Cursor = 0, limit: Limit = 50, order: Order = "asc"
+    ) -> MessagePage:
+        """Read messages whose receiver is your label, across all subjects, by date (asc/desc)."""
+        try:
+            return board.addressed_to(receiver, after_id, limit, order)
         except ValueError as exc:
             raise ToolError(str(exc)) from exc
 

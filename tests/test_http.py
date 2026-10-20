@@ -19,7 +19,7 @@ def test_http_discovery_and_posting(tmp_path: Path, mode: Literal["auto", "legac
             async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app)) as http:
                 transport = streamable_http_client("http://127.0.0.1:8000/mcp", http_client=http)
                 async with Client(transport, mode=mode) as client:
-                    assert len((await client.list_tools()).tools) == 8
+                    assert len((await client.list_tools()).tools) == 9
                     result = await client.call_tool(
                         "create_subject",
                         {

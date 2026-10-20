@@ -8,10 +8,10 @@ export function preview(text) {
 }
 
 export const subjectSummary = ({id, title, author, created_at}) => ({id, title, author, created_at});
-export const messageSummary = ({id, subject_id, parent_id, author, kind, created_at}) => ({id, subject_id, parent_id, author, kind, created_at});
-export function messagePreview({id, subject_id, parent_id, author, kind, created_at, body}) {
+export const messageSummary = ({id, subject_id, parent_id, author, receiver, kind, created_at}) => ({id, subject_id, parent_id, author, receiver, kind, created_at});
+export function messagePreview({id, subject_id, parent_id, author, receiver, kind, created_at, body}) {
   const abbreviated = preview(body);
-  return {id, subject_id, parent_id, author, kind, created_at, body: abbreviated, truncated: abbreviated !== body};
+  return {id, subject_id, parent_id, author, receiver, kind, created_at, body: abbreviated, truncated: abbreviated !== body};
 }
 
 export function overview(state) {

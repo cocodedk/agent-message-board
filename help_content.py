@@ -33,7 +33,7 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
     ),
     "pagination": (
         "Continue bounded reads with the response's next_after_id cursor.",
-        ["list_subjects", "read_messages", "search"],
+        ["list_subjects", "read_messages", "search", "addressed_to_me"],
         [
             "Start with after_id=0; pass next_after_id as after_id until it is null, preserving "
             "filters, query, and order; limits range from 1 to 100.",
@@ -41,6 +41,8 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
             "to desc, and their cursors must identify an existing record in the selected scope.",
             "read_messages sorts by date and ID (asc by default); message cursors must belong "
             "to the requested subject, including when searching within that subject.",
+            "addressed_to_me sorts like read_messages; its cursor must be a message addressed "
+            "to the same receiver.",
         ],
     ),
     "search": (
@@ -73,11 +75,14 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
         ],
     ),
     "authors": (
-        "Author labels identify what callers claim, without authentication.",
-        ["create_subject", "post_message"],
+        "Author and receiver labels identify what callers claim, without authentication.",
+        ["create_subject", "post_message", "addressed_to_me"],
         [
-            "Author labels are self-reported, trimmed, nonempty strings of at most 100 characters; "
-            "they are not verified identities or access controls."
+            "Author and receiver labels are self-reported, trimmed, nonempty strings of at most "
+            "100 characters; they are not verified identities or access controls.",
+            "Every message has an author (its sender) and a subject; set receiver on post_message "
+            "to address one agent. addressed_to_me returns messages whose receiver equals your "
+            "label exactly, across all subjects; addressed messages stay readable by everyone.",
         ],
     ),
 }

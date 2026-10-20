@@ -7,12 +7,18 @@ from pathlib import Path
 
 from models import Kind, Message, MessagePage, Order, Scope, SearchPage, Subject, SubjectPage
 
+RECEIVER = "receiver TEXT CHECK (receiver IS NULL OR length(trim(receiver)) BETWEEN 1 AND 100)"
+
 
 class Board:
     def __init__(self, path: Path) -> None:
         self.path = path.expanduser().resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            columns = {row["name"] for row in db.execute("PRAGMA table_info(messages)")}
+            if columns and "receiver" not in columns:
+                db.execute(f"ALTER TABLE messages ADD COLUMN {RECEIVER}")
             db.executescript(Path(__file__).with_name("schema.sql").read_text())
 
     @contextmanager
@@ -130,7 +136,13 @@ class Board:
             return self.require_message(db, message_id)
 
     def post_message(
-        self, subject_id: int, author: str, body: str, parent_id: int | None, kind: Kind
+        self,
+        subject_id: int,
+        author: str,
+        body: str,
+        parent_id: int | None,
+        kind: Kind,
+        receiver: str | None = None,
     ) -> Message:
         with self.connect() as db:
             self.require_subject(db, subject_id)
@@ -139,9 +151,9 @@ class Board:
                 if parent.subject_id != subject_id:
                     raise ValueError("Parent message must belong to the same subject")
             row = db.execute(
-                "INSERT INTO messages (subject_id, parent_id, author, body, kind) "
-                "VALUES (?, ?, ?, ?, ?) RETURNING *",
-                (subject_id, parent_id, author, body, kind),
+                "INSERT INTO messages (subject_id, parent_id, author, receiver, body, kind) "
+                "VALUES (?, ?, ?, ?, ?, ?) RETURNING *",
+                (subject_id, parent_id, author, receiver, body, kind),
             ).fetchone()
             assert row is not None
             return Message.model_validate(dict(row))
@@ -177,6 +189,22 @@ class Board:
                 where += " AND kind = ?"
                 params += (kind,)
             rows = self.date_rows(db, "messages", cursor, limit, order, where, params)
+        messages = [Message.model_validate(dict(row)) for row in rows[:limit]]
+        return MessagePage(
+            messages=messages,
+            next_after_id=messages[-1].id if len(rows) > limit else None,
+        )
+
+    def addressed_to(
+        self, receiver: str, after_id: int, limit: int, order: Order = "asc"
+    ) -> MessagePage:
+        with self.connect() as db:
+            cursor = self.require_message(db, after_id) if after_id else None
+            if cursor is not None and cursor.receiver != receiver:
+                raise ValueError("Message cursor must be addressed to the requested receiver")
+            rows = self.date_rows(
+                db, "messages", cursor, limit, order, "receiver = ?", (receiver,)
+            )
         messages = [Message.model_validate(dict(row)) for row in rows[:limit]]
         return MessagePage(
             messages=messages,

@@ -4,7 +4,7 @@ import {ReadMcp} from '../viewer/mcp.js';
 import {BoardReader} from '../viewer/board.js';
 
 const subject = (id = 1) => ({id, title: `Subject ${id}`, description: 'Evidence', author: 'a', created_at: '2026-10-01T00:00:00Z'});
-const message = (id = 1, subject_id = 1) => ({id, subject_id, parent_id: null, author: 'b', body: 'Evidence', kind: 'message', created_at: '2026-10-01T00:00:00Z'});
+const message = (id = 1, subject_id = 1) => ({id, subject_id, parent_id: null, author: 'b', receiver: null, body: 'Evidence', kind: 'message', created_at: '2026-10-01T00:00:00Z'});
 function rpcFetcher(log, respond = () => ({subjects: [], next_after_id: null})) {
   return async (_url, options) => {
     const request = JSON.parse(options.body);

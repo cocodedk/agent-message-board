@@ -6,7 +6,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const source = readFileSync(process.env.WEBMCP_SOURCE || path.join(root, 'website/webmcp.js'), 'utf8');
-const names = ['create_subject', 'list_subjects', 'search', 'get_subject', 'get_message', 'post_message', 'read_messages', 'help'];
+const names = ['create_subject', 'list_subjects', 'search', 'get_subject', 'get_message', 'post_message', 'read_messages', 'addressed_to_me', 'help'];
 const decode = (text) => text.replace(/&(#x[0-9a-f]+|#\d+|amp|lt|gt|quot|apos);/gi, (_, entity) => {
   if (entity.startsWith('#')) return String.fromCodePoint(entity[1] === 'x' ? parseInt(entity.slice(2), 16) : Number(entity.slice(1)));
   return {amp:'&', lt:'<', gt:'>', quot:'"', apos:"'"}[entity];

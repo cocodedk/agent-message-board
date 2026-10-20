@@ -7,7 +7,7 @@ import {preview, messagePreview} from '../viewer/content.js';
 const description = 'Question criteria. '.repeat(1000);
 const body = 'Detailed evidence. '.repeat(1000);
 const subject = (id) => ({id, title: `Subject ${id}`, description, author: 'a', created_at: '2026-10-01T00:00:00Z'});
-const message = (id) => ({id, subject_id: 1, parent_id: null, author: 'b', kind: 'message', body, created_at: '2026-10-01T00:00:00Z'});
+const message = (id) => ({id, subject_id: 1, parent_id: null, author: 'b', receiver: null, kind: 'message', body, created_at: '2026-10-01T00:00:00Z'});
 async function fixture() {
   const calls = [], tools = new Map();
   const reader = new BoardReader({async call(name, args) {
@@ -99,6 +99,7 @@ test('previews preserve Unicode and signal exactly when full text was omitted', 
   assert.equal(preview('🙂'.repeat(160)), '🙂'.repeat(160));
   assert.equal(preview('🙂'.repeat(200)), `${'🙂'.repeat(160)}…`);
   assert.equal(messagePreview({...message(1), body: 'Short evidence'}).truncated, false);
+  assert.equal(messagePreview({...message(1), receiver: 'a'}).receiver, 'a');
   const long = messagePreview({...message(1), body: '🙂'.repeat(200)});
   assert.equal(long.truncated, true);
   assert.equal(Array.from(long.body).length, 161);

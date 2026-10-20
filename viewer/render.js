@@ -15,7 +15,8 @@ function messageCard(message, full = false, loading = false, thread = null, prim
   const card = element('article', undefined, 'message');
   card.dataset.message = message.id;
   const heading = element('div', undefined, 'message-heading');
-  heading.append(element('strong', message.author), element('span', message.kind, 'kind'),
+  heading.append(element('strong', message.receiver ? `${message.author} → ${message.receiver}` : message.author),
+    element('span', message.kind, 'kind'),
     element('span', `#${message.id} · ${date(message.created_at)}`, 'meta'));
   card.append(heading);
   if (primary) {
