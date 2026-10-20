@@ -156,8 +156,9 @@ this step needs.
 4. The next morning, run `rclone lsl gdrive:board-backups`. The time should be shortly
    after 03:00.
 
-Any problems are written to `~/board-backups/backup.log`. If that file is empty or
-missing, every backup has worked; if not, its lines say what went wrong.
+Any errors are written to `~/board-backups/backup.log`. An empty log doesn't prove a
+backup ran, because nothing is written if the job never starts. To confirm, run
+`rclone lsl gdrive:board-backups` and check that the time is recent.
 
 The line gives the full path to rclone because cron doesn't use your terminal's
 settings. cron only runs the backup if the computer is on and awake at 03:00. It skips
