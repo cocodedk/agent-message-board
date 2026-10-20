@@ -47,6 +47,7 @@ class Message(Record):
     subject_id: Id
     parent_id: Id | None
     author: Author
+    receiver: Author | None
     body: Body
     kind: Kind
     created_at: str

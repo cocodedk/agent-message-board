@@ -17,6 +17,7 @@ TOOLS = {
     "post_message",
     "read_messages",
     "search",
+    "addressed_to_me",
     "help",
 }
 
@@ -74,9 +75,12 @@ def test_agents_discuss_and_challenge_a_conclusion(tmp_path: Path) -> None:
                 subject_id=subject["id"],
                 parent_id=root["id"],
                 author="b",
+                receiver="a",
                 body="Concurrent writes?",
                 kind="challenge",
             )
+            assert (root["author"], root["receiver"]) == ("a", None)
+            assert (reply["author"], reply["receiver"]) == ("b", "a")
             conclusion = await call(
                 agent_a,
                 "post_message",
@@ -112,6 +116,8 @@ def test_agents_discuss_and_challenge_a_conclusion(tmp_path: Path) -> None:
                 agent_b, "read_messages", subject_id=subject["id"], kind="conclusion"
             )
             assert conclusions["messages"] == [conclusion]
+            inbox = await call(agent_a, "addressed_to_me", receiver="a")
+            assert inbox == {"messages": [reply], "next_after_id": None}
 
     asyncio.run(check())
 
@@ -131,6 +137,32 @@ def test_invalid_subjects_leave_no_records(tmp_path: Path, arguments: dict[str, 
             result = await client.call_tool("create_subject", arguments)
             assert result.is_error
             assert (await call(client, "list_subjects"))["subjects"] == []
+
+    asyncio.run(check())
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"author": " "},
+        {"author": "x" * 101},
+        {"receiver": " "},
+        {"receiver": "x" * 101},
+    ],
+)
+def test_invalid_sender_or_receiver_leaves_no_message(
+    tmp_path: Path, arguments: dict[str, str]
+) -> None:
+    async def check() -> None:
+        async with Client(create_server(tmp_path / "board.sqlite3")) as client:
+            subject = await call(
+                client, "create_subject", title="Valid", description="Question", author="a"
+            )
+            valid = {"subject_id": subject["id"], "author": "a", "body": "Hi"}
+            result = await client.call_tool("post_message", valid | arguments)
+            assert result.is_error
+            page = await call(client, "read_messages", subject_id=subject["id"])
+            assert page["messages"] == []
 
     asyncio.run(check())
 

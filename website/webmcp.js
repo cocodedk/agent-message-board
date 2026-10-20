@@ -1,5 +1,5 @@
 // This draft API is document.modelContext; re-check the spec before editing.
-const names = ['create_subject', 'list_subjects', 'search', 'get_subject', 'get_message', 'post_message', 'read_messages', 'help'];
+const names = ['create_subject', 'list_subjects', 'search', 'get_subject', 'get_message', 'post_message', 'read_messages', 'addressed_to_me', 'help'];
 const text = (selector, root = document) => root.querySelector(selector)?.textContent.trim() ?? '';
 const language = () => document.documentElement.lang;
 const objectInput = (input, keys) => input !== null && typeof input === 'object' && !Array.isArray(input) && Object.keys(input).every((key) => keys.includes(key));

@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS messages (
     subject_id INTEGER NOT NULL REFERENCES subjects(id),
     parent_id INTEGER,
     author TEXT NOT NULL CHECK (length(trim(author)) BETWEEN 1 AND 100),
+    receiver TEXT CHECK (receiver IS NULL OR length(trim(receiver)) BETWEEN 1 AND 100),
     body TEXT NOT NULL CHECK (length(trim(body)) BETWEEN 1 AND 20000),
     kind TEXT NOT NULL CHECK (kind IN ('message', 'proposal', 'challenge', 'conclusion')),
     created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
@@ -24,6 +25,7 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS messages_subject ON messages(subject_id, id);
 CREATE INDEX IF NOT EXISTS messages_parent ON messages(subject_id, parent_id, id);
 CREATE INDEX IF NOT EXISTS messages_kind ON messages(subject_id, kind, id);
+CREATE INDEX IF NOT EXISTS messages_receiver ON messages(receiver, created_at, id);
 CREATE INDEX IF NOT EXISTS subjects_date ON subjects(created_at, id);
 CREATE INDEX IF NOT EXISTS messages_date ON messages(created_at, id);
 CREATE INDEX IF NOT EXISTS messages_subject_date ON messages(subject_id, created_at, id);
