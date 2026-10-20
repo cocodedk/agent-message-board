@@ -102,6 +102,7 @@ def test_addressed_to_spans_subjects_and_paginates(board: Board, subject_id: int
 def create_old_database(path: Path) -> None:
     with closing(sqlite3.connect(path)) as db, db:
         db.executescript(
+            "PRAGMA journal_mode = WAL;"
             "CREATE TABLE subjects (id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL,"
             " description TEXT NOT NULL, author TEXT NOT NULL,"
             " created_at TEXT NOT NULL DEFAULT 'then') STRICT;"
