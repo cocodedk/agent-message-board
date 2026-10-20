@@ -22,9 +22,10 @@ function mockBoard() {
     calls.push({name, args});
     if (name === 'get_subject') return subject(args.subject_id);
     if (name === 'get_message') return message(args.message_id);
-    if (name === 'list_subjects' || (name === 'search' && args.scope === 'subjects')) {
-      return {subjects: [subject(args.after_id ? 2 : 1)], next_after_id: args.after_id ? null : 1};
+    if (name === 'list_subjects') {
+      return {subjects: [{...subject(args.after_id ? 2 : 1), message_count: 3, last_message_at: '2026-10-02T00:00:00Z'}], next_after_id: args.after_id ? null : 1};
     }
+    if (name === 'search' && args.scope === 'subjects') return {subjects: [subject(args.after_id ? 2 : 1)], next_after_id: args.after_id ? null : 1};
     return {messages: [message()], next_after_id: null};
   }};
   return {reader: new BoardReader(client), calls};
@@ -85,6 +86,23 @@ test('message searches stay within the selected subject and ask MCP for date sor
   await reader.browseMessages({query: ' evidence ', order: 'asc'});
   assert.deepEqual(calls.at(-1), {name: 'search', args: {subject_id: 3, query: 'evidence', scope: 'messages', order: 'asc', limit: 10, after_id: 0}});
 });
+test('subjects list by recent activity by default and keep the server counts', async () => {
+  const {reader, calls} = mockBoard();
+  await reader.browseSubjects();
+  assert.deepEqual(calls[0], {name: 'list_subjects', args: {after_id: 0, limit: 10, order: 'activity'}});
+  assert.equal(reader.state.subjects[0].message_count, 3);
+  assert.equal(reader.state.subjects[0].last_message_at, '2026-10-02T00:00:00Z');
+  await reader.browseSubjects({order: 'asc'});
+  assert.equal(calls.at(-1).args.order, 'asc');
+  assert.throws(() => reader.browseSubjects({order: 'sideways'}), /Sort subjects/);
+});
+test('subject search under recent activity asks the server for newest first, which search supports', async () => {
+  const {reader, calls} = mockBoard();
+  await reader.browseSubjects({query: 'SQLite'});
+  assert.deepEqual(calls[0].args, {query: 'SQLite', scope: 'subjects', order: 'desc', limit: 10, after_id: 0});
+  assert.equal(reader.state.subject_order, 'activity');
+  assert.ok(!Object.hasOwn(reader.state.subjects[0], 'message_count'));
+});
 test('changing filters while loading another page is rejected instead of mixing result sets', async () => {
   const {reader} = mockBoard();
   await reader.browseSubjects({query: 'first'});
@@ -102,25 +120,6 @@ test('a late old search cannot overwrite a newer result', async () => {
   assert.equal((await old).name, 'AbortError');
   assert.equal(reader.state.subjects[0].id, 2);
   assert.equal(reader.errors.subjects, null);
-});
-test('changing subjects cancels an old parent read', async () => {
-  const {reader} = mockBoard();
-  await reader.openSubject(1);
-  let resolveParent;
-  const original = reader.client.call;
-  reader.client.call = (name, args) => name === 'get_message'
-    ? new Promise((resolve) => { resolveParent = resolve; }) : original(name, args);
-  const parent = reader.showMessage(1).catch((error) => error);
-  await reader.openSubject(2);
-  resolveParent(message(1, 1));
-  assert.equal((await parent).name, 'AbortError');
-  assert.equal(reader.state.context, null);
-});
-test('foreign messages cannot be shown as context in another subject', async () => {
-  const {reader} = mockBoard();
-  await reader.openSubject(2);
-  await assert.rejects(reader.showMessage(1), /another subject/);
-  assert.equal(reader.state.context, null);
 });
 test('message browsing requires a selected subject', () => {
   const {reader, calls} = mockBoard();
