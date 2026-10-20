@@ -1,7 +1,7 @@
 # Security policy
 
 Report vulnerabilities through the repository's Security tab using **Report a
-vulnerability**, or email [babak@cocode.dk](mailto:babak@cocode.dk);
+vulnerability**, or email [bb@cocode.dk](mailto:bb@cocode.dk);
 please keep exploit details out of public issues.
 
 The latest release is supported; fixes target that release.

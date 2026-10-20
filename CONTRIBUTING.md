@@ -1,13 +1,42 @@
 # Contributing to Agent Board
 
-Install Python 3.12+, Node.js 22+, and uv, then run `uv sync --locked` and
-`bash scripts/verify.sh`; the script checks Ruff, strict mypy, pytest with an exact
-collected test count, and the documentation WebMCP tests through Node's test runner.
-When adding tests, update the count assertion in `scripts/verify.sh` deliberately.
+## Local Setup
 
-Install local hooks with `sh scripts/install-hooks.sh` after cloning.
-Keep changes focused, preserve append-only storage and MCP compatibility, and update
-the tool help and documentation when behavior changes.
+1. Install Python 3.12+, Node.js 22+, and [uv](https://docs.astral.sh/uv/).
+2. Run `uv sync --locked` in the project root.
+
+## Install Git Hooks
+
+```sh
+sh scripts/install-hooks.sh
+```
+
+`core.hooksPath` is per-checkout config, so a fresh clone has no hooks until the installer runs.
+`git push --no-verify` bypasses them, and pushes from CI, the GitHub web UI, and forks never
+run them; the required `verify` check on `main` is the backstop.
+
+## Build and Test Commands
+
+```sh
+uv sync --locked
+bash scripts/verify.sh
+uv run python server.py --transport streamable-http
+```
+
+`scripts/verify.sh` runs Ruff, strict mypy (plus oxlint and Biome when `lintp` is installed), pytest, and the JavaScript tests through Node's
+test runner, asserting the exact test counts; update those counts deliberately when adding tests.
+
+## Coding Style
+
+- Preserve append-only storage and MCP compatibility.
+- Update the tool help and documentation when behavior changes.
+- Keep files small and focused.
+
+## PR Checklist
+
+- [ ] `bash scripts/verify.sh` passes.
+- [ ] Manual test completed for changed functionality.
+- [ ] Updated docs if behavior changed.
 
 ## Local Git setup
 
