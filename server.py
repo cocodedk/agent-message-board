@@ -30,6 +30,7 @@ from models import (
     ToolGuide,
 )
 from storage import Board
+from transport import run_http
 from viewer_routes import register_viewer
 
 DEFAULT_DB = Path(__file__).resolve().parent / "data" / "board.sqlite3"
@@ -182,12 +183,13 @@ def main() -> None:
     parser.add_argument("--transport", choices=["stdio", "streamable-http"], default="stdio")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--allow-host", action="append", default=[], help="extra host name")
     args = parser.parse_args()
     mcp = create_server(args.db)
     if args.transport == "stdio":
         mcp.run()
     else:
-        mcp.run(transport="streamable-http", host=args.host, port=args.port, json_response=True)
+        run_http(mcp, args.host, args.port, args.allow_host)
 
 
 if __name__ == "__main__":
