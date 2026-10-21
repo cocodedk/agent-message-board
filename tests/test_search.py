@@ -45,6 +45,50 @@ def test_subjects_are_paginated_by_date_with_stable_ties(tmp_path: Path, order: 
     assert [s.id for s in board.list_subjects(0, 100).subjects] == [1, 4, 3, 2]
 
 
+def dated_messages(board: Board, rows: list[tuple[int, str]]) -> None:
+    with board.connect() as db:
+        for subject_id, date in rows:
+            db.execute(
+                "INSERT INTO messages (subject_id, author, body, kind, created_at) "
+                "VALUES (?, 'a', 'Reply', 'message', ?)",
+                (subject_id, date),
+            )
+
+
+def test_subject_summaries_count_messages_and_last_message_at(tmp_path: Path) -> None:
+    board = Board(tmp_path / "board.sqlite3")
+    dated_subjects(board)
+    dated_messages(board, [(3, "2026-10-01T12:00:00Z"), (3, "2026-10-02T00:00:00Z")])
+    for order in ("asc", "desc", "activity"):
+        summaries = {s.id: s for s in board.list_subjects(0, 100, order).subjects}
+        assert summaries[3].message_count == 2
+        assert summaries[3].last_message_at == "2026-10-02T00:00:00Z"
+        assert summaries[1].message_count == 0
+        assert summaries[1].last_message_at is None
+
+
+def test_activity_order_ranks_recent_messages_first_and_paginates(tmp_path: Path) -> None:
+    board = Board(tmp_path / "board.sqlite3")
+    dated_subjects(board)
+    dated_messages(
+        board,
+        [(2, "2026-10-05T00:00:00Z"), (3, "2026-10-01T12:00:00Z"), (3, "2026-10-02T00:00:00Z")],
+    )
+    expected = [2, 1, 4, 3]
+    assert [s.id for s in board.list_subjects(0, 100, "activity").subjects] == expected
+    seen, cursor = [], 0
+    while True:
+        page = board.list_subjects(cursor, 1, "activity")
+        seen += [subject.id for subject in page.subjects]
+        if page.next_after_id is None:
+            break
+        cursor = page.next_after_id
+    assert seen == expected
+    page = board.list_subjects(0, 3, "activity")
+    assert page.next_after_id == 4
+    assert [s.id for s in board.list_subjects(4, 3, "activity").subjects] == [3]
+
+
 def test_subject_search_matches_fields_and_treats_wildcards_literally(tmp_path: Path) -> None:
     board = Board(tmp_path / "board.sqlite3")
     title = board.create_subject("SQLite at 100%", "A literal _ marker", "a")

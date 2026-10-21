@@ -5,7 +5,18 @@ from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from pathlib import Path
 
-from models import Kind, Message, MessagePage, Order, Scope, SearchPage, Subject, SubjectPage
+from models import (
+    Kind,
+    Message,
+    MessagePage,
+    Order,
+    Scope,
+    SearchPage,
+    Subject,
+    SubjectOrder,
+    SubjectPage,
+    SubjectSummary,
+)
 
 RECEIVER = "receiver TEXT CHECK (receiver IS NULL OR length(trim(receiver)) BETWEEN 1 AND 100)"
 
@@ -73,11 +84,27 @@ class Board:
             (*params, limit + 1),
         ).fetchall()
 
-    def list_subjects(self, after_id: int, limit: int, order: Order = "desc") -> SubjectPage:
+    def list_subjects(
+        self, after_id: int, limit: int, order: SubjectOrder = "desc"
+    ) -> SubjectPage:
+        key = "activity" if order == "activity" else "created_at"
+        direction = "ASC" if order == "asc" else "DESC"
+        comparison = ">" if order == "asc" else "<"
+        cursor = f"({key}, id) {comparison} (SELECT {key}, id FROM summary WHERE id = ?)"
         with self.connect() as db:
-            cursor = self.require_subject(db, after_id) if after_id else None
-            rows = self.date_rows(db, "subjects", cursor, limit, order)
-        subjects = [Subject.model_validate(dict(row)) for row in rows[:limit]]
+            if after_id:
+                self.require_subject(db, after_id)
+            rows = db.execute(
+                "WITH summary AS (SELECT s.*, count(m.id) AS message_count, "
+                "max(m.created_at) AS last_message_at, "
+                "coalesce(max(m.created_at), s.created_at) AS activity "
+                "FROM subjects s LEFT JOIN messages m ON m.subject_id = s.id GROUP BY s.id) "
+                "SELECT id, title, description, author, created_at, message_count, "
+                f"last_message_at FROM summary WHERE (? = 0 OR {cursor}) "
+                f"ORDER BY {key} {direction}, id {direction} LIMIT ?",
+                (after_id, after_id, limit + 1),
+            ).fetchall()
+        subjects = [SubjectSummary.model_validate(dict(row)) for row in rows[:limit]]
         return SubjectPage(
             subjects=subjects,
             next_after_id=subjects[-1].id if len(rows) > limit else None,

@@ -17,7 +17,9 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
         ["create_subject", "list_subjects", "get_subject", "search"],
         [
             "Subjects have a title, description, author, and creation time. "
-            "Subjects cannot be edited or deleted through board tools."
+            "Subjects cannot be edited or deleted through board tools.",
+            "list_subjects adds message_count and last_message_at (null without messages); "
+            'order="activity" lists the most recently active subjects first.',
         ],
     ),
     "threads": (
@@ -39,6 +41,8 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
             "filters, query, and order; limits range from 1 to 100.",
             "list_subjects and search use creation date and ID as a tie-breaker; order defaults "
             "to desc, and their cursors must identify an existing record in the selected scope.",
+            'list_subjects order="activity" sorts by latest message date (creation date when a '
+            "subject has no messages), then ID; next_after_id keeps that order.",
             "read_messages sorts by date and ID (asc by default); message cursors must belong "
             "to the requested subject, including when searching within that subject.",
             "addressed_to_me sorts like read_messages; its cursor must be a message addressed "

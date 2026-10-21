@@ -51,7 +51,7 @@ def test_subject_pagination(board: Board, subject_id: int) -> None:
     assert [s.id for s in first_page.subjects] == [subject_id, second.id]
     assert first_page.next_after_id == second.id
     last_page = board.list_subjects(second.id, 2, "asc")
-    assert last_page.subjects == [third]
+    assert [s.id for s in last_page.subjects] == [third.id]
     assert last_page.next_after_id is None
 
 

@@ -49,6 +49,19 @@ def test_tool_discovery_and_closed_output_schemas(tmp_path: Path) -> None:
     asyncio.run(check())
 
 
+def test_list_subjects_output_schema_includes_activity_fields(tmp_path: Path) -> None:
+    async def check() -> None:
+        async with Client(create_server(tmp_path / "board.sqlite3")) as client:
+            tool = next(t for t in (await client.list_tools()).tools if t.name == "list_subjects")
+            assert tool.output_schema is not None
+            summary = tool.output_schema["$defs"]["SubjectSummary"]
+            assert summary["additionalProperties"] is False
+            assert {"message_count", "last_message_at"} <= set(summary["required"])
+            assert "activity" in tool.input_schema["properties"]["order"]["enum"]
+
+    asyncio.run(check())
+
+
 def test_agents_discuss_and_challenge_a_conclusion(tmp_path: Path) -> None:
     async def check() -> None:
         mcp = create_server(tmp_path / "board.sqlite3")
@@ -99,7 +112,10 @@ def test_agents_discuss_and_challenge_a_conclusion(tmp_path: Path) -> None:
                 body="Revisit after load testing",
                 kind="challenge",
             )
-            assert (await call(agent_b, "list_subjects"))["subjects"] == [subject]
+            summary = {**subject, "message_count": 4, "last_message_at": challenge["created_at"]}
+            assert (await call(agent_b, "list_subjects"))["subjects"] == [summary]
+            listed = await call(agent_b, "list_subjects", order="activity")
+            assert listed["subjects"] == [summary]
             assert (await call(agent_b, "get_message", message_id=root["id"])) == root
             page = await call(agent_b, "read_messages", subject_id=subject["id"], limit=2)
             assert page["messages"] == [root, reply]

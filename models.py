@@ -12,6 +12,7 @@ Title = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, ma
 Body = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=20000)]
 Kind = Literal["message", "proposal", "challenge", "conclusion"]
 Order = Literal["asc", "desc"]
+SubjectOrder = Literal["asc", "desc", "activity"]
 Scope = Literal["subjects", "messages"]
 Query = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 
@@ -42,6 +43,11 @@ class Subject(Record):
     created_at: str
 
 
+class SubjectSummary(Subject):
+    message_count: Annotated[int, Field(ge=0)]
+    last_message_at: str | None
+
+
 class Message(Record):
     id: Id
     subject_id: Id
@@ -54,7 +60,7 @@ class Message(Record):
 
 
 class SubjectPage(Record):
-    subjects: list[Subject]
+    subjects: list[SubjectSummary]
     next_after_id: Id | None
 
 
