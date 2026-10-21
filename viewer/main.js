@@ -31,26 +31,16 @@ byId('subject-list').addEventListener('click', (event) => {
   const button = event.target.closest('[data-subject]');
   if (button) safely(() => reader.openSubject(Number(button.dataset.subject)));
 });
+byId('message-list').addEventListener('click', (event) => {
+  const toggle = event.target.closest('[data-toggle]');
+  if (toggle) safely(() => reader.toggleThread(Number(toggle.dataset.toggle)));
+  const result = event.target.closest('[data-reveal]');
+  if (result) safely(() => reader.openThread(Number(result.dataset.reveal)));
+});
 byId('more-subjects').addEventListener('click', () => safely(() => reader.browseSubjects({more: true})));
 byId('more-messages').addEventListener('click', () => safely(() => reader.browseMessages({more: true})));
 byId('refresh').addEventListener('click', () => safely(() => reader.refresh()));
-byId('all-subjects').addEventListener('click', () => safely(() => reader.browseSubjects()));
-byId('subject-overview').addEventListener('click', () => safely(() => reader.openSubject(reader.state.subject.id)));
-byId('parent-thread').addEventListener('click', () => safely(() => reader.openThread(reader.state.thread.parent_id)));
-byId('message-list').addEventListener('click', (event) => {
-    const thread = event.target.closest('[data-thread]');
-    if (thread) safely(() => reader.openThread(Number(thread.dataset.thread)));
-    const read = event.target.closest('[data-read-message]');
-    if (read) safely(() => reader.showMessage(Number(read.dataset.readMessage)));
-    const parent = event.target.closest('[data-parent]');
-    if (parent) {
-      const anchor = parent.closest('#context') ? reader.state.context_anchor_id
-        : Number(parent.closest('[data-message]').dataset.message);
-      safely(() => reader.showMessage(Number(parent.dataset.parent), undefined,
-        anchor));
-    }
-    if (event.target.closest('[data-close-context]')) safely(() => reader.showMessage(null));
-});
+byId('all-subjects').addEventListener('click', () => reader.closeSubject());
 render(reader);
 void registerWebMcp(reader);
 safely(() => reader.browseSubjects());

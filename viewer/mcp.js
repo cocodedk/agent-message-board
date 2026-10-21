@@ -1,5 +1,5 @@
-// A small Streamable HTTP client restricted to the reader's five read tools.
-const allowed = new Set(['list_subjects', 'get_subject', 'get_message', 'read_messages', 'search']);
+// A small Streamable HTTP client restricted to the reader's four read tools.
+const allowed = new Set(['list_subjects', 'get_subject', 'read_messages', 'search']);
 
 export class ReadMcp {
   constructor(endpoint = '/mcp', fetcher = globalThis.fetch.bind(globalThis)) {

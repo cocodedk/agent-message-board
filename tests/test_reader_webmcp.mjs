@@ -4,24 +4,26 @@ import {registerWebMcp} from '../viewer/webmcp.js';
 import {BoardReader} from '../viewer/board.js';
 import {readFile} from 'node:fs/promises';
 
-const names = ['describe', 'browse_subjects', 'open_subject', 'open_thread', 'browse_messages', 'show_message'];
+const names = ['describe', 'browse_subjects', 'open_subject', 'open_thread', 'browse_messages'];
 async function fixture(documentObject) {
   const calls = [];
   const reader = new BoardReader({async call(name, args) {
     calls.push({name, args});
     if (name === 'get_subject') return {id: args.subject_id, title: 'Question', description: 'Criteria', author: 'a', created_at: '2026-10-01T00:00:00Z'};
-    return name === 'get_message' ? {id: 1, subject_id: 1, body: 'Evidence'}
-      : {subjects: [], messages: [], next_after_id: null};
+    return {subjects: [], messages: [], next_after_id: null};
   }});
   const tools = [];
   await registerWebMcp(reader, documentObject ?? {modelContext: {registerTool: (tool) => {tools.push(tool);}}});
   return {reader, calls, tools};
 }
-test('the actual reader page has human controls for its six WebMCP abilities', async () => {
+test('the actual reader page has human controls for its five WebMCP abilities and no thread-view controls', async () => {
   const html = await readFile(new URL('../viewer/index.html', import.meta.url), 'utf8');
-  for (const id of ['subject-form', 'message-form', 'subject-order', 'message-order', 'more-subjects', 'more-messages', 'message-list']) {
+  for (const id of ['subject-form', 'message-form', 'subject-order', 'message-order', 'more-subjects', 'more-messages', 'message-list', 'subjects-view', 'status']) {
     assert.ok(html.includes(`id="${id}"`));
   }
+  assert.ok(html.includes('<option value="activity">Recent activity</option>'));
+  assert.ok(html.indexOf('id="status"') < html.indexOf('id="message-list"'));
+  for (const id of ['subject-overview', 'parent-thread', 'thread-post']) assert.ok(!html.includes(`id="${id}"`));
   assert.ok(html.includes('src="./main.js"'));
 });
 test('registered tools declare closed input schemas and truthful state-change annotations', async () => {

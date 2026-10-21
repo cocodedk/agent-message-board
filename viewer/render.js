@@ -1,4 +1,4 @@
-import {preview} from './content.js';
+import {preview, replyCount, threadRows} from './content.js';
 import {markdown} from './markdown.js';
 
 const element = (tag, text, className) => {
@@ -9,58 +9,84 @@ const element = (tag, text, className) => {
 };
 const date = (value) => new Date(value).toLocaleString();
 const byId = (id) => document.getElementById(id);
-const count = (value, name) => `${value} ${value === 1 ? name : name === 'reply' ? 'replies' : `${name}s`} shown`;
+const plural = (value, name, names = `${name}s`) => `${value} ${value === 1 ? name : names}`;
+const plainPreview = (text) => {
+  const node = markdown(preview(text));
+  for (const block of node.querySelectorAll('p, li, h1, h2, h3, h4, h5, h6, pre, blockquote, tr')) block.append(' ');
+  return node.textContent.replace(/\s+/g, ' ').trim();
+};
+const DEEP = 3;
 
-function messageCard(message, full = false, loading = false, thread = null, primary = false) {
-  const card = element('article', undefined, 'message');
-  card.dataset.message = message.id;
-  const heading = element('div', undefined, 'message-heading');
-  heading.append(element('strong', message.receiver ? `${message.author} → ${message.receiver}` : message.author),
+function heading(message, parent) {
+  const row = element('span', undefined, 'message-heading');
+  row.append(element('strong', message.receiver ? `${message.author} → ${message.receiver}` : message.author),
     element('span', message.kind, 'kind'),
     element('span', `#${message.id} · ${date(message.created_at)}`, 'meta'));
-  card.append(heading);
-  if (primary) {
-    card.append(markdown(message.body));
-  } else if (full) {
-    card.id = 'context';
-    const close = element('button', `Collapse message #${message.id}`, 'parent');
-    close.type = 'button'; close.dataset.closeContext = '';
-    card.append(close, markdown(message.body));
-  } else {
-    card.append(markdown(preview(message.body)));
-    const read = element('button', `Read message #${message.id}`, 'parent');
-    read.type = 'button'; read.dataset.readMessage = message.id;
-    read.disabled = loading;
-    card.append(read);
+  if (parent) row.append(element('span', `reply to ${parent.author} #${parent.id}`, 'meta'));
+  return row;
+}
+
+function threadCard(s, root, open, loading) {
+  const card = element('article', undefined, 'thread');
+  card.dataset.message = root.id;
+  const replies = replyCount(s.conversation, root.id);
+  const toggle = element('button', undefined, 'thread-toggle');
+  toggle.type = 'button'; toggle.dataset.toggle = root.id; toggle.disabled = loading;
+  toggle.setAttribute('aria-expanded', String(open));
+  toggle.append(heading(root));
+  if (!open) toggle.append(element('span', plainPreview(root.body), 'preview'));
+  toggle.append(element('span', replies ? plural(replies, 'reply', 'replies') : 'No replies', replies ? 'replies' : 'replies none'));
+  card.append(toggle);
+  if (!open) return card;
+  const tree = element('div', undefined, 'thread-tree');
+  tree.id = `thread-${root.id}`; toggle.setAttribute('aria-controls', tree.id);
+  const byMessage = new Map(s.conversation.map((row) => [row.id, row]));
+  for (const {message, depth} of threadRows(s.conversation, root.id)) {
+    if (depth === 0) { tree.append(markdown(message.body)); continue; }
+    const reply = element('article', undefined, 'reply');
+    reply.dataset.message = message.id;
+    reply.style.setProperty('--depth', String(depth));
+    reply.append(heading(message, depth > DEEP ? byMessage.get(message.parent_id) : null), markdown(message.body));
+    tree.append(reply);
   }
-  if (!primary) {
-    const open = element('button', `Open thread #${message.id}`, 'parent');
-    open.type = 'button'; open.dataset.thread = message.id; open.disabled = loading;
-    card.append(open);
-  }
-  if (!primary && message.parent_id !== null && message.parent_id !== thread?.id) {
-    const parent = element('button', `Read parent #${message.parent_id}`, 'parent');
-    parent.type = 'button'; parent.dataset.parent = message.parent_id;
-    parent.disabled = loading;
-    card.append(parent);
-  }
+  card.append(tree);
   return card;
+}
+
+function resultCard(message, loading) {
+  const button = element('button', undefined, 'result');
+  button.type = 'button'; button.dataset.reveal = message.id; button.disabled = loading;
+  button.append(heading(message), element('span', plainPreview(message.body), 'preview'));
+  return button;
+}
+
+function status(reader) {
+  const s = reader.state;
+  if (Object.values(reader.busy).some(Boolean)) return 'Reading the board…';
+  if (!s.subject) return `${plural(s.subjects.length, 'subject')} shown`;
+  if (s.message_query) return `${plural(s.messages.length, 'search result')} shown`;
+  const threads = s.conversation.filter((row) => row.parent_id === null).length;
+  return `${plural(s.conversation.length, 'message')} in ${plural(threads, 'thread')}`;
+}
+
+function subjectEntry(s, subject) {
+  const button = element('button', undefined, 'subject-button');
+  button.type = 'button'; button.dataset.subject = subject.id;
+  if (s.subject?.id === subject.id) button.setAttribute('aria-current', 'true');
+  const facts = Number.isInteger(subject.message_count)
+    ? [plural(subject.message_count, 'message'), subject.last_message_at ? `last ${date(subject.last_message_at)}` : 'no messages yet']
+    : [subject.author, date(subject.created_at)];
+  button.append(element('strong', subject.title), element('span', facts.join(' · '), 'meta'));
+  return button;
 }
 
 export function render(reader) {
   const s = reader.state;
-  const loading = Object.values(reader.busy).some(Boolean);
-  const view = s.subject ? (s.thread ? 'thread' : 'subject') : 'subjects';
-  const list = s.message_query ? 'search result' : (s.thread ? 'reply' : 'thread');
-  byId('subjects-view').hidden = view !== 'subjects';
-  byId('discussion-view').hidden = view === 'subjects';
-  byId('all-subjects').hidden = view === 'subjects';
-  byId('subject-overview').hidden = view !== 'thread';
-  byId('parent-thread').hidden = !s.thread?.parent_id;
-  byId('parent-thread').textContent = s.thread?.parent_id ? `Parent thread #${s.thread.parent_id}` : 'Parent thread';
-  byId('status').textContent = loading ? 'Reading the board…'
-    : view === 'subjects' ? count(s.subjects.length, 'subject') : count(s.messages.length, list);
-  byId('refresh').disabled = loading;
+  const focused = document.activeElement?.dataset ?? {};
+  byId('workspace').classList.toggle('has-subject', Boolean(s.subject));
+  byId('all-subjects').hidden = !s.subject;
+  byId('status').textContent = status(reader);
+  byId('refresh').disabled = Object.values(reader.busy).some(Boolean);
   const error = Object.values(reader.errors).find(Boolean);
   byId('error').hidden = !error;
   byId('error').textContent = error ?? '';
@@ -69,25 +95,17 @@ export function render(reader) {
     if (document.activeElement !== input) input.value = s[`${scope}_query`];
     byId(`${scope}-order`).value = s[`${scope}_order`];
   }
-  const subjects = s.subjects.map((subject) => {
-    const button = element('button', undefined, 'subject-button');
-    button.type = 'button'; button.dataset.subject = subject.id;
-    button.setAttribute('aria-pressed', String(s.subject?.id === subject.id));
-    button.append(element('strong', subject.title),
-      element('span', `${subject.author} · ${date(subject.created_at)}`, 'meta'));
-    return button;
-  });
+  const subjects = s.subjects.map((subject) => subjectEntry(s, subject));
   if (!subjects.length && !reader.busy.subjects) {
     subjects.push(element('p', s.subject_query ? 'No subjects match this search.' : 'No subjects yet.'));
   }
   byId('subject-list').replaceChildren(...subjects);
-  byId('conversation-heading').textContent = s.thread ? `Thread #${s.thread.id}` : s.subject?.title ?? 'Subjects';
-  byId('page-intro').hidden = view !== 'subjects';
-  byId('subject-overview').textContent = s.subject?.title ?? 'Subject overview';
+  byId('conversation-heading').textContent = s.subject?.title ?? 'Agent Board';
+  byId('page-intro').hidden = Boolean(s.subject);
+  byId('discussion-body').hidden = !s.subject;
   const description = s.subject?.description ?? '';
   byId('subject-preview').replaceChildren(markdown(preview(description.length <= 160 ? description : description.split(/\n\s*\n/)[0])));
-  byId('subject-preview').hidden = view !== 'subject';
-  byId('subject-details').hidden = view !== 'subject' || description.length <= 160;
+  byId('subject-details').hidden = description.length <= 160;
   byId('subject-details').open = s.description_open;
   if (byId('subject-details').dataset.subject !== String(s.subject?.id)) {
     byId('subject-details').dataset.subject = String(s.subject?.id);
@@ -95,23 +113,33 @@ export function render(reader) {
   }
   byId('subject-meta').textContent = s.subject
     ? `#${s.subject.id} · ${s.subject.author} · ${date(s.subject.created_at)}` : '';
-  byId('message-form').hidden = !s.subject;
-  byId('messages-heading').textContent = s.message_query ? 'Search results in this subject' : s.thread ? 'Direct replies' : 'Threads';
-  byId('thread-post').hidden = !s.thread;
-  byId('thread-post').replaceChildren(...(s.thread ? [messageCard(s.thread, true, false, s.thread, true)] : []));
-  const messages = s.messages.map((message) => {
-    if (s.context?.id === message.id && s.context_anchor_id === message.id) return messageCard(s.context, true, reader.busy.messages, s.thread);
-    const card = messageCard(message, false, reader.busy.messages, s.thread);
-    if (s.context && s.context_anchor_id === message.id) card.append(messageCard(s.context, true, reader.busy.messages, s.thread));
-    return card;
-  });
-  if (s.context && s.context_anchor_id === null) messages.unshift(messageCard(s.context, true, false, s.thread));
-  if (s.subject && !messages.length && !reader.busy.messages) {
-    messages.push(element('p', s.message_query ? 'No messages match this search.' : s.thread ? 'No direct replies yet.' : 'No threads yet.'));
+  byId('messages-heading').textContent = s.message_query ? 'Search results in this subject' : 'Threads';
+  const loading = reader.busy.messages;
+  const cards = s.message_query ? s.messages.map((message) => resultCard(message, loading))
+    : s.messages.map((root) => threadCard(s, root, s.open_threads.includes(root.id), loading));
+  byId('message-form').querySelector('button').disabled = loading;
+  if (s.subject && !cards.length && !reader.busy.messages && !reader.busy.search) {
+    cards.push(element('p', s.message_query ? 'No messages match this search.' : 'No threads yet.'));
   }
-  byId('message-list').replaceChildren(...messages);
-  for (const [scope, cursor] of [['subjects', s.next_subject_cursor], ['messages', s.next_message_cursor]]) {
+  byId('message-list').replaceChildren(...cards);
+  byId('more-messages').textContent = s.message_query ? 'Next results' : 'Show more threads';
+  for (const [scope, cursor, busy] of [['subjects', s.next_subject_cursor, reader.busy.subjects],
+    ['messages', s.next_message_cursor, reader.busy.messages || reader.busy.search]]) {
     byId(`more-${scope}`).hidden = cursor === null;
-    byId(`more-${scope}`).disabled = reader.busy[scope];
+    byId(`more-${scope}`).disabled = busy;
+  }
+  // Rebuilt lists keep keyboard focus on the same control.
+  for (const key of ['toggle', 'subject']) {
+    if (focused[key]) document.querySelector(`[data-${key}="${focused[key]}"]`)?.focus({preventScroll: true});
+  }
+  if (s.reveal_id !== null) {
+    const target = byId('message-list').querySelector(`[data-message="${s.reveal_id}"]`);
+    s.reveal_id = null;
+    if (target) {
+      target.classList.add('revealed');
+      target.tabIndex = -1;
+      target.focus({preventScroll: true});
+      target.scrollIntoView({block: 'start'});
+    }
   }
 }
