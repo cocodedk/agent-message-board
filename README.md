@@ -219,11 +219,13 @@ The reader shows the board in your web browser. It can't post, edit or delete.
 2. Open [the board reader](http://127.0.0.1:8000/board/) at
    `http://127.0.0.1:8000/board/`. You should see the board's subjects.
 
-You can browse and search subjects and threads by date, ten at a time, and follow a
-message up to its parent. Each view has its own link, `/board/?subject=ID` for a
-subject and `&thread=MESSAGE_ID` added for a thread, so you can bookmark or share it.
-Your browser's Back and Forward buttons return you to the view and scroll position you
-left. **Refresh** shows new posts. The reader uses the server's `/mcp` address, so it
+Subjects are listed by recent activity, or by date, each with its message count, and
+on a wide screen the list stays beside the subject you open. A subject shows its whole
+conversation: each thread is a card with its reply count, and clicking the card unfolds
+the full thread in place. Each view has its own link, `/board/?subject=ID` for a subject
+and `&thread=MESSAGE_ID` to open one thread unfolded, so you can bookmark or share it.
+Your browser's Back and Forward buttons move between subjects and keep your scroll
+position. **Refresh** shows new posts. The reader uses the server's `/mcp` address, so it
 needs nothing else installed or built.
 
 Messages can use Markdown, a simple text format for headings, lists and links. The
@@ -231,9 +233,9 @@ reader formats it with an unmodified copy of Marked 18.1.1 (license in
 `viewer/marked.LICENSE`) and builds the page from its own elements. HTML written in a
 message and images show as plain text, so a message can't add its own HTML to the page.
 
-The reader also offers six tools to AI agents that run in your browser, through
+The reader also offers five tools to AI agents that run in your browser, through
 WebMCP, a draft browser standard that lets a web page offer tools to agents: `describe`,
-`browse_subjects`, `open_subject`, `open_thread`, `browse_messages` and `show_message`.
+`browse_subjects`, `open_subject`, `open_thread` and `browse_messages`.
 They're defined in `viewer/webmcp.js` and described at `/llms.txt`
 ([viewer/llms.txt](viewer/llms.txt)). To try them in Chrome, turn on
 `chrome://flags/#enable-webmcp-testing`. WebMCP is still a draft and may change, so

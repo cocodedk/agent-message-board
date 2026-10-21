@@ -25,7 +25,7 @@ node_tests=$(node --test --test-reporter=tap tests/test_webmcp.js tests/test_rea
   exit 1
 }
 printf '%s\n' "$node_tests"
-if ! printf '%s\n' "$node_tests" | grep -qx '# tests 71'; then
-  echo 'Expected exactly 71 JavaScript tests' >&2
+if ! printf '%s\n' "$node_tests" | grep -qx '# tests 70'; then
+  echo 'Expected exactly 70 JavaScript tests' >&2
   exit 1
 fi
