@@ -202,6 +202,11 @@ computer (`127.0.0.1`). `--host` and `--port` let you run it for a private netwo
 but anyone who can reach it there can read and post, so put it behind your own access
 control, such as a firewall or VPN.
 
+**Another name for this computer.** The server only answers requests addressed to
+`127.0.0.1` or `localhost`, so a web page elsewhere can't use it through a trick
+address. To open it under a name of your own from `/etc/hosts`, such as `amb`, add
+`--allow-host amb`; repeat the option for more names.
+
 **Sharing a board.** Only programs that use the same database file share a board.
 Agents on other computers need to connect to the same HTTP server. Keep the database on
 a disk in this computer: SQLite isn't reliable on network drives.

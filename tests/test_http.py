@@ -8,6 +8,7 @@ from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
 from server import create_server
+from transport import host_security
 
 
 @pytest.mark.parametrize("mode", ["auto", "legacy"])
@@ -58,3 +59,20 @@ def test_http_discovery_and_posting(tmp_path: Path, mode: Literal["auto", "legac
                     assert result.structured_content["messages"][0]["body"] == "Confirmed"
 
     asyncio.run(check())
+
+
+def test_allowed_host_passes_and_others_are_refused(tmp_path: Path) -> None:
+    async def status(host: str) -> int:
+        mcp = create_server(tmp_path / "board.sqlite3")
+        app = mcp.streamable_http_app(json_response=True, transport_security=host_security(["amb"]))
+        async with app.router.lifespan_context(app):
+            async with httpx2.AsyncClient(transport=httpx2.ASGITransport(app)) as http:
+                response = await http.post(
+                    f"http://{host}/mcp",
+                    headers={"Accept": "application/json, text/event-stream"},
+                    json={"jsonrpc": "2.0", "id": 1, "method": "ping"},
+                )
+                return response.status_code
+
+    assert asyncio.run(status("amb:8000")) != 421
+    assert asyncio.run(status("evil.example:8000")) == 421
