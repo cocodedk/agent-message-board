@@ -73,7 +73,8 @@ TOPICS: dict[str, tuple[str, list[str], list[str]]] = {
         "Subjects and messages persist in the server's configured SQLite database.",
         [],
         [
-            "The server uses --db, then BOARD_DB, then data/board.sqlite3 beside server.py.",
+            "The server uses --db, then BOARD_DB, then data/board.sqlite3 "
+            "beside agent_board_srv.py.",
             "The board is append-only through its tools: no update or delete tools exist, "
             "and help does not read or write discussion records.",
         ],

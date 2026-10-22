@@ -6,8 +6,8 @@ import pytest
 from mcp import Client
 from mcp.client.stdio import StdioServerParameters
 
+from agent_board_srv import create_server
 from models import Order, Scope
-from server import create_server
 from storage import Board
 
 DATES = [
@@ -186,7 +186,7 @@ def test_date_listing_and_search_through_stdio_mcp(tmp_path: Path) -> None:
         params = StdioServerParameters(
             command=sys.executable,
             args=[
-                str(Path(__file__).resolve().parents[1] / "server.py"),
+                str(Path(__file__).resolve().parents[1] / "agent_board_srv.py"),
                 "--db",
                 str(tmp_path / "board.sqlite3"),
             ],

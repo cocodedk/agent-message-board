@@ -20,7 +20,7 @@ run them; the required `verify` check on `main` is the backstop.
 ```sh
 uv sync --locked
 bash scripts/verify.sh
-uv run python server.py --transport streamable-http
+uv run python agent_board_srv.py --transport streamable-http
 ```
 
 `scripts/verify.sh` runs Ruff, strict mypy (plus oxlint and Biome when `lintp` is installed), pytest, and the JavaScript tests through Node's

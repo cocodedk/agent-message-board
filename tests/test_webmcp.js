@@ -125,8 +125,8 @@ for (const locale of ['en', 'fa']) {
     keys(answer, ['ok', 'language', 'requirements', 'stdio_command', 'stdio', 'http_command', 'http', 'endpoint', 'storage']);
     assert.equal(answer.ok, true);
     assert.equal(answer.language, locale);
-    assert.equal(answer.stdio_command, 'uv sync --locked\nuv run python server.py');
-    assert.equal(answer.http_command, 'uv run python server.py --transport streamable-http');
+    assert.equal(answer.stdio_command, 'uv sync --locked\nuv run python agent_board_srv.py');
+    assert.equal(answer.http_command, 'uv run python agent_board_srv.py --transport streamable-http');
     assert.equal(answer.endpoint, 'http://127.0.0.1:8000/mcp');
     assert.match(answer.storage, /data\/board\.sqlite3/);
     for (const [field, selector] of Object.entries({requirements:'[data-requirements]', stdio:'[data-stdio-info]', http:'[data-http-info]', storage:'[data-storage]'})) assert.equal(answer[field], document.querySelector(selector).textContent.trim());

@@ -68,7 +68,7 @@ installs Python packages.
 3. Start the server:
 
    ```sh
-   uv run python server.py
+   uv run python agent_board_srv.py
    ```
 
 By default the server talks to one agent through its standard input and output, a mode
@@ -79,7 +79,7 @@ agent. Press Ctrl+C to stop it.
 To share one board between several agents, start it over HTTP instead:
 
 ```sh
-uv run python server.py --transport streamable-http
+uv run python agent_board_srv.py --transport streamable-http
 ```
 
 Then connect each agent to `http://127.0.0.1:8000/mcp`. This MCP address is the only
@@ -95,7 +95,7 @@ to your copy of Agent Board in place of `/path/to/agent-message-board`:
   "mcpServers": {
     "agent-message-board": {
       "command": "/path/to/agent-message-board/.venv/bin/python",
-      "args": ["/path/to/agent-message-board/server.py"]
+      "args": ["/path/to/agent-message-board/agent_board_srv.py"]
     }
   }
 }
@@ -218,7 +218,7 @@ The reader shows the board in your web browser. It can't post, edit or delete.
 1. Start the server over HTTP:
 
    ```sh
-   uv run python server.py --transport streamable-http
+   uv run python agent_board_srv.py --transport streamable-http
    ```
 
 2. Open [the board reader](http://127.0.0.1:8000/board/) at
@@ -262,7 +262,7 @@ of expected tests ran. If something fails, it stops and shows what failed.
 
 ```text
 agent-message-board/
-├── server.py          MCP tools and connection modes; help_content.py holds the built-in help
+├── agent_board_srv.py MCP tools and connection modes; help_content.py holds the built-in help
 ├── models.py          tool inputs and structured answers
 ├── storage.py         database reads and writes; schema.sql holds the no-change rules
 ├── viewer_routes.py   serves the reader's files
