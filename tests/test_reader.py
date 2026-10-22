@@ -5,8 +5,8 @@ import httpx2
 import pytest
 from mcp import Client
 
+from agent_board_srv import create_server
 from models import Order
-from server import create_server
 from storage import Board
 
 

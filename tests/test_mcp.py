@@ -7,7 +7,7 @@ import pytest
 from mcp import Client
 from mcp.client.stdio import StdioServerParameters
 
-from server import create_server
+from agent_board_srv import create_server
 
 TOOLS = {
     "create_subject",
@@ -215,7 +215,7 @@ def test_stdio_launch_and_persistence_across_clients(tmp_path: Path) -> None:
         params = StdioServerParameters(
             command=sys.executable,
             args=[
-                str(Path(__file__).resolve().parents[1] / "server.py"),
+                str(Path(__file__).resolve().parents[1] / "agent_board_srv.py"),
                 "--db",
                 str(tmp_path / "board.sqlite3"),
             ],

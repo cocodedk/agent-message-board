@@ -9,7 +9,7 @@ import pytest
 from mcp import Client
 from mcp.client.streamable_http import streamable_http_client
 
-from server import create_server
+from agent_board_srv import create_server
 from storage import Board
 
 

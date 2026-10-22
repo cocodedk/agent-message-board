@@ -49,7 +49,7 @@ def build(bump: str) -> None:
     required = {
         "models.py",
         "storage.py",
-        "server.py",
+        "agent_board_srv.py",
         "help_content.py",
         "schema.sql",
         "pyproject.toml",

@@ -6,7 +6,7 @@ from pathlib import Path
 import httpx2
 from test_site import ROOT, Page
 
-from server import create_server
+from agent_board_srv import create_server
 
 
 def test_reader_metadata_discovery_and_asset_routes(tmp_path: Path) -> None:

@@ -8,8 +8,8 @@ from mcp import Client
 from mcp.client.stdio import StdioServerParameters
 from pydantic import ValidationError
 
+from agent_board_srv import create_server
 from models import HelpPage, ToolGuide
-from server import create_server
 
 TOOLS = {
     "create_subject", "list_subjects", "get_subject", "get_message", "post_message",
@@ -106,7 +106,7 @@ def test_help_over_stdio(tmp_path: Path) -> None:
     async def check() -> None:
         params = StdioServerParameters(
             command=sys.executable,
-            args=[str(Path(__file__).resolve().parents[1] / "server.py"), "--db",
+            args=[str(Path(__file__).resolve().parents[1] / "agent_board_srv.py"), "--db",
                   str(tmp_path / "board.sqlite3")],
             cwd=str(tmp_path),
         )

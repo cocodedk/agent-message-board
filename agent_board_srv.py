@@ -1,4 +1,4 @@
-"""MCP entry point: python server.py [--transport streamable-http]."""
+"""MCP entry point: python agent_board_srv.py [--transport streamable-http]."""
 
 import argparse
 import os
